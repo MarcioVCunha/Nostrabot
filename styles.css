@@ -1,0 +1,163 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f5f7fb;
+  color: #1b1f23;
+}
+
+.container {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+h1 {
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  margin-top: 0;
+  color: #475467;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #d9e0ea;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+select,
+input[type="number"] {
+  padding: 7px;
+  border: 1px solid #c7d2e0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+button {
+  border: 1px solid #0b6bcb;
+  background: #0b6bcb;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button.secondary {
+  border-color: #c7d2e0;
+  background: #ffffff;
+  color: #1b1f23;
+}
+
+button.danger {
+  border-color: #c43838;
+  background: #c43838;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status {
+  min-height: 20px;
+  margin-top: 8px;
+  color: #1d4f91;
+}
+
+.hint {
+  color: #667085;
+  margin-top: 0;
+}
+
+.audio-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.audio-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.audio-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.audio-name {
+  font-weight: bold;
+  word-break: break-word;
+}
+
+.audio-meta {
+  margin: 6px 0 10px;
+  font-size: 0.9rem;
+  color: #667085;
+}
+
+.timer-widget {
+  margin-top: 16px;
+  position: relative;
+  width: 180px;
+  height: 180px;
+}
+
+.timer-ring {
+  display: block;
+  transform: rotate(-90deg);
+}
+
+.ring-bg {
+  fill: none;
+  stroke: #e5eaf2;
+  stroke-width: 12;
+}
+
+.ring-progress {
+  fill: none;
+  stroke: #0b6bcb;
+  stroke-width: 12;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.25s linear;
+}
+
+.timer-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.time-remaining {
+  font-size: 1.4rem;
+  font-weight: bold;
+}
+
+.time-caption {
+  margin-top: 4px;
+  color: #667085;
+  font-size: 0.92rem;
+}

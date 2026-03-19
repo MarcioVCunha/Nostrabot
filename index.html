@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audio Timer Vercel</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Audio Timer Vercel</h1>
+      <p class="subtitle">
+        Envie arquivos de audio, salve na Vercel e agende a
+        reproducao.
+      </p>
+
+      <section class="card">
+        <h2>1) Enviar audio</h2>
+        <div class="row">
+          <input id="audioInput" type="file" accept="audio/*" multiple />
+          <button id="saveButton">Enviar para Vercel</button>
+        </div>
+        <p id="uploadStatus" class="status"></p>
+      </section>
+
+      <section class="card">
+        <h2>2) Audios salvos</h2>
+        <p class="hint">
+          Os arquivos ficam salvos no Vercel Blob (cloud).
+        </p>
+        <ul id="audioList" class="audio-list"></ul>
+      </section>
+
+      <section class="card">
+        <h2>3) Timer com reproducao aleatoria</h2>
+        <p class="hint">
+          Quando o timer terminar, um audio aleatorio da lista sera reproduzido.
+        </p>
+
+        <div class="row">
+          <input
+            id="timerAmount"
+            type="number"
+            min="1"
+            placeholder="Tempo"
+            aria-label="Quantidade de tempo"
+          />
+          <select id="timerUnit" aria-label="Unidade de tempo">
+            <option value="seconds">Segundos</option>
+            <option value="minutes">Minutos</option>
+          </select>
+          <button id="startRandomTimerButton">Iniciar timer</button>
+          <button id="cancelRandomTimerButton" class="secondary" disabled>
+            Cancelar timer
+          </button>
+        </div>
+
+        <div class="timer-widget">
+          <svg
+            id="timerSvg"
+            class="timer-ring"
+            width="180"
+            height="180"
+            viewBox="0 0 180 180"
+            aria-label="Progresso do timer"
+          >
+            <circle class="ring-bg" cx="90" cy="90" r="76"></circle>
+            <circle
+              id="timerProgressRing"
+              class="ring-progress"
+              cx="90"
+              cy="90"
+              r="76"
+            ></circle>
+          </svg>
+          <div class="timer-center">
+            <div id="timeRemainingLabel" class="time-remaining">--:--</div>
+            <div id="timerStateLabel" class="time-caption">Aguardando</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
