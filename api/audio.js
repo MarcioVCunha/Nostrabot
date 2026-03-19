@@ -12,6 +12,12 @@ function getSafeFileName(name) {
 
 module.exports = async function handler(req, res) {
   try {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return sendJson(res, 500, {
+        error: "BLOB_READ_WRITE_TOKEN nao configurado no projeto Vercel."
+      });
+    }
+
     if (req.method === "GET") {
       const { blobs } = await list({ prefix: "audios/" });
       return sendJson(res, 200, { items: blobs });
@@ -49,6 +55,8 @@ module.exports = async function handler(req, res) {
     return sendJson(res, 405, { error: "Metodo nao permitido." });
   } catch (error) {
     console.error(error);
-    return sendJson(res, 500, { error: "Erro interno na API de audio." });
+    return sendJson(res, 500, {
+      error: error?.message || "Erro interno na API de audio."
+    });
   }
 };

@@ -53,7 +53,8 @@ async function uploadAudioFile(file) {
   });
 
   if (!response.ok) {
-    throw new Error("Falha ao enviar arquivo para a API.");
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || "Falha ao enviar arquivo para a API.");
   }
 
   const data = await response.json();
@@ -63,7 +64,8 @@ async function uploadAudioFile(file) {
 async function getAllAudioRecords() {
   const response = await fetch("/api/audio");
   if (!response.ok) {
-    throw new Error("Falha ao listar arquivos.");
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || "Falha ao listar arquivos.");
   }
   const data = await response.json();
   return data.items || [];
@@ -74,7 +76,8 @@ async function deleteAudioRecord(url) {
     method: "DELETE"
   });
   if (!response.ok) {
-    throw new Error("Falha ao excluir arquivo.");
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || "Falha ao excluir arquivo.");
   }
 }
 
@@ -259,7 +262,7 @@ async function handleSaveFiles() {
     await refreshList();
   } catch (error) {
     console.error(error);
-    uploadStatus.textContent = "Erro ao salvar os arquivos.";
+    uploadStatus.textContent = error?.message || "Erro ao salvar os arquivos.";
   } finally {
     saveButton.disabled = false;
   }
@@ -274,8 +277,7 @@ async function init() {
     timerStateLabel.textContent = "Aguardando";
   } catch (error) {
     console.error(error);
-    uploadStatus.textContent =
-      "Nao foi possivel conectar com a API da Vercel.";
+    uploadStatus.textContent = error?.message || "Erro ao conectar com a API.";
     saveButton.disabled = true;
   }
 }
