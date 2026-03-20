@@ -401,6 +401,13 @@ async function handleSaveFiles() {
 
 async function init() {
   try {
+    // Estado inicial: sempre mostra a tela de setup ao carregar.
+    isTimerRunning = false;
+    isAudioPlaying = false;
+    activeAudio = null;
+    activeCountdown = null;
+    showSetupScreen();
+
     saveButton.addEventListener("click", handleSaveFiles);
     startRandomTimerButton.addEventListener("click", startRandomTimer);
     cancelRandomTimerButton.addEventListener("click", cancelRandomTimer);

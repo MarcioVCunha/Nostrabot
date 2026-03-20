@@ -199,6 +199,10 @@ button:disabled {
   gap: 18px;
 }
 
+.timer-screen[hidden] {
+  display: none !important;
+}
+
 .timer-ring {
   display: block;
   transform: rotate(-90deg);
