@@ -14,6 +14,9 @@ const timerStateLabel = document.getElementById("timerStateLabel");
 
 let cachedRecords = [];
 let activeCountdown = null;
+let isTimerRunning = false;
+let isAudioPlaying = false;
+let activeAudio = null;
 const ringRadius = 76;
 const ringCircumference = 2 * Math.PI * ringRadius;
 
@@ -32,6 +35,24 @@ function applyTheme(theme) {
   document.body.setAttribute("data-theme", theme);
   if (!themeToggle) return;
   themeToggle.textContent = theme === "dark" ? "Tema: Escuro" : "Tema: Claro";
+}
+
+function updateUiLock() {
+  const lockTimer = isTimerRunning || isAudioPlaying;
+  const lockPlay = isTimerRunning || isAudioPlaying;
+
+  if (startRandomTimerButton) startRandomTimerButton.disabled = lockTimer;
+  if (timerAmountInput) timerAmountInput.disabled = lockTimer;
+  if (timerUnitSelect) timerUnitSelect.disabled = lockTimer;
+
+  // Permite cancelar apenas enquanto o timer (contagem) está rodando.
+  if (cancelRandomTimerButton) cancelRandomTimerButton.disabled = !isTimerRunning;
+
+  document
+    .querySelectorAll('#audioList button[data-role="play"]')
+    .forEach((btn) => {
+      btn.disabled = lockPlay;
+    });
 }
 
 if (themeToggle) {
@@ -108,8 +129,44 @@ async function deleteAudioRecord(url) {
 }
 
 function playUrl(url) {
-  const audio = new Audio(url);
-  audio.play().catch((error) => {
+  if (!url) return;
+  // Se por algum motivo já existir um áudio tocando, para aqui.
+  if (activeAudio) {
+    try {
+      activeAudio.pause();
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  isAudioPlaying = true;
+  updateUiLock();
+
+  activeAudio = new Audio(url);
+  activeAudio.addEventListener(
+    "ended",
+    () => {
+      isAudioPlaying = false;
+      activeAudio = null;
+      timerStateLabel.textContent = "Aguardando";
+      updateUiLock();
+    },
+    { once: true }
+  );
+
+  activeAudio.addEventListener(
+    "error",
+    () => {
+      isAudioPlaying = false;
+      activeAudio = null;
+      timerStateLabel.textContent = "Erro ao tocar audio";
+      updateUiLock();
+    },
+    { once: true }
+  );
+
+  // Dispara a reprodução; se falhar, o evento "error" deve ocorrer.
+  activeAudio.play().catch((error) => {
     console.error("Erro ao reproduzir audio:", error);
   });
 }
@@ -169,8 +226,12 @@ function buildAudioItem(record) {
 
   const playNowButton = document.createElement("button");
   playNowButton.className = "secondary";
+  playNowButton.dataset.role = "play";
   playNowButton.textContent = "Reproduzir agora";
-  playNowButton.addEventListener("click", () => playUrl(record.url));
+  playNowButton.addEventListener("click", () => {
+    if (isTimerRunning || isAudioPlaying) return;
+    playUrl(record.url);
+  });
 
   const deleteButton = document.createElement("button");
   deleteButton.className = "danger";
@@ -210,6 +271,7 @@ async function refreshList() {
     empty.className = "audio-item";
     empty.textContent = "Nenhum audio salvo ainda.";
     audioList.appendChild(empty);
+    updateUiLock();
     return;
   }
 
@@ -217,6 +279,7 @@ async function refreshList() {
   records.forEach((record) => {
     audioList.appendChild(buildAudioItem(record));
   });
+  updateUiLock();
 }
 
 function startRandomTimer() {
@@ -231,6 +294,9 @@ function startRandomTimer() {
     return;
   }
 
+  isTimerRunning = true;
+  updateUiLock();
+
   const multiplier = timerUnitSelect.value === "minutes" ? 60_000 : 1_000;
   const durationMs = amount * multiplier;
   const startAt = Date.now();
@@ -244,8 +310,11 @@ function startRandomTimer() {
   const timeoutId = setTimeout(() => {
     const chosen = getRandomRecord(cachedRecords);
     if (chosen) {
+      // Remove o nome do audio do layout do timer.
+      timerStateLabel.textContent = "Tocando...";
+      isTimerRunning = false;
+      updateUiLock();
       playUrl(chosen.url);
-      timerStateLabel.textContent = `Tocando: ${getDisplayName(chosen)}`;
     } else {
       timerStateLabel.textContent = "Sem audios para tocar";
     }
@@ -267,6 +336,9 @@ function startRandomTimer() {
 
 function cancelRandomTimer() {
   if (!activeCountdown) return;
+  // Só permite cancelar enquanto a contagem estiver rodando.
+  isTimerRunning = false;
+  updateUiLock();
   stopCountdown("Timer cancelado");
 }
 
@@ -303,6 +375,7 @@ async function init() {
     cancelRandomTimerButton.addEventListener("click", cancelRandomTimer);
     await refreshList();
     timerStateLabel.textContent = "Aguardando";
+    updateUiLock();
   } catch (error) {
     console.error(error);
     uploadStatus.textContent = error?.message || "Erro ao conectar com a API.";
