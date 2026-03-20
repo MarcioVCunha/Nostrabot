@@ -185,6 +185,20 @@ button:disabled {
   height: 180px;
 }
 
+.timer-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--bg);
+  color: var(--text);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
 .timer-ring {
   display: block;
   transform: rotate(-90deg);
@@ -223,4 +237,28 @@ button:disabled {
   margin-top: 4px;
   color: #667085;
   font-size: 0.92rem;
+}
+
+body[data-theme="dark"] .time-caption {
+  color: var(--hint);
+}
+
+.timer-widget--fullscreen {
+  width: min(72vmin, 520px);
+  height: min(72vmin, 520px);
+}
+
+.timer-screen .time-remaining {
+  font-size: min(6vmin, 56px);
+}
+
+.timer-screen .time-caption {
+  font-size: min(2.3vmin, 18px);
+  color: var(--hint);
+  margin-top: 10px;
+}
+
+#timerSvg {
+  width: 100%;
+  height: 100%;
 }

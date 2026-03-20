@@ -4,6 +4,8 @@ const uploadStatus = document.getElementById("uploadStatus");
 const audioList = document.getElementById("audioList");
 const audioDropdownSummary = document.getElementById("audioDropdownSummary");
 const themeToggle = document.getElementById("themeToggle");
+const setupScreen = document.getElementById("setupScreen");
+const timerScreen = document.getElementById("timerScreen");
 const timerAmountInput = document.getElementById("timerAmount");
 const timerUnitSelect = document.getElementById("timerUnit");
 const startRandomTimerButton = document.getElementById("startRandomTimerButton");
@@ -17,7 +19,7 @@ let activeCountdown = null;
 let isTimerRunning = false;
 let isAudioPlaying = false;
 let activeAudio = null;
-const ringRadius = 76;
+const ringRadius = Number(timerProgressRing?.getAttribute("r")) || 76;
 const ringCircumference = 2 * Math.PI * ringRadius;
 
 timerProgressRing.style.strokeDasharray = `${ringCircumference}`;
@@ -45,14 +47,26 @@ function updateUiLock() {
   if (timerAmountInput) timerAmountInput.disabled = lockTimer;
   if (timerUnitSelect) timerUnitSelect.disabled = lockTimer;
 
-  // Permite cancelar apenas enquanto o timer (contagem) está rodando.
-  if (cancelRandomTimerButton) cancelRandomTimerButton.disabled = !isTimerRunning;
+  // Permite cancelar também durante o áudio tocando, para voltar para a tela de setup.
+  if (cancelRandomTimerButton) cancelRandomTimerButton.disabled = !(isTimerRunning || isAudioPlaying);
 
   document
     .querySelectorAll('#audioList button[data-role="play"]')
     .forEach((btn) => {
       btn.disabled = lockPlay;
     });
+}
+
+function showTimerScreen() {
+  if (setupScreen) setupScreen.hidden = true;
+  if (timerScreen) timerScreen.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function showSetupScreen() {
+  if (timerScreen) timerScreen.hidden = true;
+  if (setupScreen) setupScreen.hidden = false;
+  document.body.style.overflow = "";
 }
 
 if (themeToggle) {
@@ -150,6 +164,7 @@ function playUrl(url) {
       activeAudio = null;
       timerStateLabel.textContent = "Aguardando";
       updateUiLock();
+      showSetupScreen();
     },
     { once: true }
   );
@@ -161,6 +176,7 @@ function playUrl(url) {
       activeAudio = null;
       timerStateLabel.textContent = "Erro ao tocar audio";
       updateUiLock();
+      showSetupScreen();
     },
     { once: true }
   );
@@ -194,7 +210,6 @@ function stopCountdown(stateText) {
   if (activeCountdown?.timeoutId) clearTimeout(activeCountdown.timeoutId);
   if (activeCountdown?.intervalId) clearInterval(activeCountdown.intervalId);
   activeCountdown = null;
-  cancelRandomTimerButton.disabled = true;
   if (stateText) timerStateLabel.textContent = stateText;
   setRingProgress(0);
   timeRemainingLabel.textContent = "--:--";
@@ -296,6 +311,7 @@ function startRandomTimer() {
 
   isTimerRunning = true;
   updateUiLock();
+  showTimerScreen();
 
   const multiplier = timerUnitSelect.value === "minutes" ? 60_000 : 1_000;
   const durationMs = amount * multiplier;
@@ -303,7 +319,7 @@ function startRandomTimer() {
   const endAt = startAt + durationMs;
 
   stopCountdown();
-  cancelRandomTimerButton.disabled = false;
+  if (cancelRandomTimerButton) cancelRandomTimerButton.disabled = false;
   timerStateLabel.textContent = "Timer rodando";
 
   const intervalId = setInterval(updateCountdownUi, 250);
@@ -317,10 +333,12 @@ function startRandomTimer() {
       playUrl(chosen.url);
     } else {
       timerStateLabel.textContent = "Sem audios para tocar";
+      isTimerRunning = false;
+      updateUiLock();
+      showSetupScreen();
     }
     if (activeCountdown?.intervalId) clearInterval(activeCountdown.intervalId);
     activeCountdown = null;
-    cancelRandomTimerButton.disabled = true;
     setRingProgress(100);
     timeRemainingLabel.textContent = "00:00";
   }, durationMs);
@@ -335,11 +353,24 @@ function startRandomTimer() {
 }
 
 function cancelRandomTimer() {
-  if (!activeCountdown) return;
-  // Só permite cancelar enquanto a contagem estiver rodando.
+  if (!activeCountdown && !isAudioPlaying) return;
+
   isTimerRunning = false;
+
+  // Se o áudio já começou, pausa e volta para o setup.
+  if (activeAudio) {
+    try {
+      activeAudio.pause();
+    } catch (e) {
+      // ignore
+    }
+    activeAudio = null;
+    isAudioPlaying = false;
+  }
+
   updateUiLock();
-  stopCountdown("Timer cancelado");
+  if (activeCountdown) stopCountdown("Timer cancelado");
+  showSetupScreen();
 }
 
 async function handleSaveFiles() {
