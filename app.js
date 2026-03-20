@@ -2,6 +2,8 @@ const audioInput = document.getElementById("audioInput");
 const saveButton = document.getElementById("saveButton");
 const uploadStatus = document.getElementById("uploadStatus");
 const audioList = document.getElementById("audioList");
+const audioDropdownSummary = document.getElementById("audioDropdownSummary");
+const themeToggle = document.getElementById("themeToggle");
 const timerAmountInput = document.getElementById("timerAmount");
 const timerUnitSelect = document.getElementById("timerUnit");
 const startRandomTimerButton = document.getElementById("startRandomTimerButton");
@@ -17,6 +19,30 @@ const ringCircumference = 2 * Math.PI * ringRadius;
 
 timerProgressRing.style.strokeDasharray = `${ringCircumference}`;
 timerProgressRing.style.strokeDashoffset = `${ringCircumference}`;
+
+function getPreferredTheme() {
+  const stored = localStorage.getItem("theme");
+  if (stored === "light" || stored === "dark") return stored;
+  const prefersDark =
+    window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  return prefersDark ? "dark" : "light";
+}
+
+function applyTheme(theme) {
+  document.body.setAttribute("data-theme", theme);
+  if (!themeToggle) return;
+  themeToggle.textContent = theme === "dark" ? "Tema: Escuro" : "Tema: Claro";
+}
+
+if (themeToggle) {
+  applyTheme(getPreferredTheme());
+  themeToggle.addEventListener("click", () => {
+    const current = document.body.getAttribute("data-theme") || "light";
+    const next = current === "dark" ? "light" : "dark";
+    localStorage.setItem("theme", next);
+    applyTheme(next);
+  });
+}
 
 function formatBytes(bytes) {
   if (!bytes) return "0 B";
@@ -179,6 +205,7 @@ async function refreshList() {
 
   audioList.innerHTML = "";
   if (records.length === 0) {
+    if (audioDropdownSummary) audioDropdownSummary.textContent = "Audios salvos (0)";
     const empty = document.createElement("li");
     empty.className = "audio-item";
     empty.textContent = "Nenhum audio salvo ainda.";
@@ -186,6 +213,7 @@ async function refreshList() {
     return;
   }
 
+  if (audioDropdownSummary) audioDropdownSummary.textContent = `Audios salvos (${records.length})`;
   records.forEach((record) => {
     audioList.appendChild(buildAudioItem(record));
   });

@@ -8,7 +8,12 @@
   </head>
   <body>
     <main class="container">
-      <h1>Audio Timer Vercel</h1>
+      <div class="topbar">
+        <h1>Audio Timer Vercel</h1>
+        <button id="themeToggle" class="secondary" type="button">
+          Tema: Claro
+        </button>
+      </div>
       <p class="subtitle">
         Envie arquivos de audio, salve na Vercel e agende a
         reproducao.
@@ -28,7 +33,10 @@
         <p class="hint">
           Os arquivos ficam salvos no Vercel Blob (cloud).
         </p>
-        <ul id="audioList" class="audio-list"></ul>
+        <details class="audio-dropdown">
+          <summary id="audioDropdownSummary">Audios salvos (0)</summary>
+          <ul id="audioList" class="audio-list"></ul>
+        </details>
       </section>
 
       <section class="card">
