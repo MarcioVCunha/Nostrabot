@@ -1,0 +1,16 @@
+---
+description: Sempre fazer commit e push no GitHub apos mudancas no Nostrabot
+alwaysApply: true
+---
+
+# Deploy Nostrabot
+
+Apos concluir qualquer implementacao, correcao ou ajuste neste repositorio:
+
+1. Faca commit das mudancas relevantes (nao commitar segredos).
+2. Faca push para `origin main` sem esperar o usuario pedir.
+3. Informe que o push foi feito para disparar o redeploy na Vercel.
+
+Se o push para `main` falhar ou o redeploy nao iniciar, tente um commit vazio com mensagem `chore: trigger Vercel redeploy` e push novamente.
+
+Repositorio remoto: `https://github.com/MarcioVCunha/Nostrabot.git`

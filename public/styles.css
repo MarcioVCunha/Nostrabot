@@ -346,6 +346,30 @@ button:disabled {
   font-size: 1rem;
 }
 
+.patch-tree {
+  margin: 16px 0 0;
+  padding-left: 20px;
+  color: var(--subtitle);
+}
+
+.patch-tree ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.patch-tree > li + li {
+  margin-top: 16px;
+}
+
+.patch-tree li + li {
+  margin-top: 6px;
+}
+
+.patch-tree > li > strong,
+.patch-tree ul > li > strong {
+  color: var(--text);
+}
+
 .patch-header {
   display: flex;
   align-items: center;
@@ -369,18 +393,4 @@ button:disabled {
 
 .patch-date {
   margin: 4px 0 0;
-}
-
-.patch-list {
-  margin: 0;
-  padding-left: 20px;
-  color: var(--subtitle);
-}
-
-.patch-list li + li {
-  margin-top: 8px;
-}
-
-.patch-list code {
-  font-size: 0.88em;
 }
