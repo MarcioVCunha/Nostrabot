@@ -547,30 +547,49 @@ function buildAudioItem(record) {
   const li = document.createElement("li");
   li.className = "audio-item";
 
-  const top = document.createElement("div");
-  top.className = "audio-top";
+  const icon = document.createElement("div");
+  icon.className = "audio-icon";
+  icon.setAttribute("aria-hidden", "true");
 
-  const nameRow = document.createElement("div");
-  nameRow.className = "audio-name-row";
+  const body = document.createElement("div");
+  body.className = "audio-body";
 
-  const name = document.createElement("div");
+  const header = document.createElement("div");
+  header.className = "audio-header";
+
+  const name = document.createElement("h3");
   name.className = "audio-name";
   name.textContent = getDisplayName(record);
+  name.title = getDisplayName(record);
 
   const weightBadge = document.createElement("span");
   weightBadge.className = "audio-weight";
   weightBadge.dataset.audioWeight = record.url;
   weightBadge.textContent = `peso ${audioWeights[record.url] ?? 1}`;
 
-  nameRow.append(name, weightBadge);
+  header.append(name, weightBadge);
+
+  const meta = document.createElement("div");
+  meta.className = "audio-meta";
+
+  const size = document.createElement("span");
+  size.className = "audio-meta-item";
+  size.textContent = formatBytes(record.size);
+
+  const date = document.createElement("span");
+  date.className = "audio-meta-item";
+  date.textContent = `Salvo em ${formatDate(record.uploadedAt)}`;
+
+  meta.append(size, date);
+  body.append(header, meta);
 
   const actions = document.createElement("div");
-  actions.className = "row";
+  actions.className = "audio-actions";
 
   const playNowButton = document.createElement("button");
-  playNowButton.className = "secondary";
+  playNowButton.className = "secondary audio-action-btn";
   playNowButton.dataset.role = "play";
-  playNowButton.textContent = "Reproduzir agora";
+  playNowButton.textContent = "Tocar";
   playNowButton.addEventListener("click", () => {
     if (isTimerRunning || isAudioPlaying) return;
     clearSetupFeedback();
@@ -578,7 +597,7 @@ function buildAudioItem(record) {
   });
 
   const deleteButton = document.createElement("button");
-  deleteButton.className = "danger";
+  deleteButton.className = "danger audio-action-btn";
   deleteButton.dataset.role = "delete";
   deleteButton.textContent = "Excluir";
   deleteButton.addEventListener("click", async () => {
@@ -602,13 +621,7 @@ function buildAudioItem(record) {
   });
 
   actions.append(playNowButton, deleteButton);
-  top.append(nameRow, actions);
-
-  const meta = document.createElement("p");
-  meta.className = "audio-meta";
-  meta.textContent = `${formatBytes(record.size)} | salvo em ${formatDate(record.uploadedAt)}`;
-
-  li.append(top, meta);
+  li.append(icon, body, actions);
   return li;
 }
 
@@ -623,15 +636,20 @@ async function refreshList() {
   audioWeights = syncAudioWeights(records);
 
   audioList.innerHTML = "";
+  const audioDropdown = audioList.closest("details");
+
   if (records.length === 0) {
+    if (audioDropdown) audioDropdown.open = false;
     if (audioDropdownSummary) audioDropdownSummary.textContent = "Audios salvos (0)";
     const empty = document.createElement("li");
-    empty.className = "audio-item";
+    empty.className = "audio-item audio-item--empty";
     empty.textContent = "Nenhum audio salvo ainda.";
     audioList.appendChild(empty);
     updateUiLock();
     return;
   }
+
+  if (audioDropdown) audioDropdown.open = true;
 
   if (audioDropdownSummary) {
     audioDropdownSummary.textContent = `Audios salvos (${records.length})`;

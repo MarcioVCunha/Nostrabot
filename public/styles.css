@@ -20,6 +20,9 @@
   --status-error: #b42318;
   --hint: #667085;
   --audio-item-border: #e2e8f0;
+  --audio-item-bg: #f8fafc;
+  --audio-icon-bg: #e8f1fb;
+  --audio-icon-text: #1d4f91;
   --audio-meta: #667085;
   --ring-bg: #e5eaf2;
   --ring-progress: #0b6bcb;
@@ -45,6 +48,9 @@ body[data-theme="dark"] {
   --status-error: #ff8a8a;
   --hint: #a1adbf;
   --audio-item-border: #2a3a5a;
+  --audio-item-bg: #0b1224;
+  --audio-icon-bg: #152238;
+  --audio-icon-text: #8ab4ff;
   --audio-meta: #a1adbf;
   --ring-bg: #1e2a44;
   --ring-progress: #2b8cff;
@@ -150,14 +156,44 @@ button:disabled {
   margin-top: 0;
 }
 
+.audio-dropdown {
+  margin-top: 8px;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--audio-item-bg);
+  overflow: hidden;
+}
+
 .audio-dropdown summary {
   cursor: pointer;
   font-weight: bold;
   user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.audio-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.audio-dropdown summary::after {
+  content: "▾";
+  color: var(--hint);
+  font-size: 0.95rem;
+  transition: transform 0.2s ease;
+}
+
+.audio-dropdown[open] summary::after {
+  transform: rotate(180deg);
 }
 
 .audio-dropdown ul {
-  margin-top: 12px;
+  margin: 0;
+  padding: 0 12px 12px;
 }
 
 .audio-list {
@@ -165,51 +201,136 @@ button:disabled {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .audio-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "icon body"
+    "actions actions";
+  gap: 12px 14px;
   border: 1px solid var(--audio-item-border);
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--card-bg);
 }
 
-.audio-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  align-items: center;
+.audio-item--empty {
+  grid-template-columns: 1fr;
+  grid-template-areas: "body";
+  text-align: center;
+  color: var(--hint);
+  padding: 20px 14px;
 }
 
-.audio-name-row {
+.audio-icon {
+  grid-area: icon;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  justify-content: center;
+  background: var(--audio-icon-bg);
+  color: var(--audio-icon-text);
+  font-size: 1.2rem;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.audio-icon::before {
+  content: "♪";
+}
+
+.audio-body {
+  grid-area: body;
   min-width: 0;
 }
 
+.audio-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .audio-name {
-  font-weight: bold;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 700;
   word-break: break-word;
 }
 
 .audio-weight {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: bold;
+  font-size: 0.75rem;
+  font-weight: 700;
   background: var(--weight-bg);
   color: var(--weight-text);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .audio-meta {
-  margin: 6px 0 0;
-  font-size: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 8px;
+  font-size: 0.86rem;
   color: var(--audio-meta);
+}
+
+.audio-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.audio-meta-item + .audio-meta-item::before {
+  content: "•";
+  color: var(--hint);
+  margin-right: 4px;
+}
+
+.audio-actions {
+  grid-area: actions;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--audio-item-border);
+}
+
+.audio-action-btn {
+  width: 100%;
+  min-height: 40px;
+  font-weight: 600;
+}
+
+@media (max-width: 520px) {
+  .audio-item {
+    padding: 12px;
+  }
+
+  .audio-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .audio-meta-item + .audio-meta-item::before {
+    display: none;
+  }
+
+  .audio-meta {
+    flex-direction: column;
+    gap: 4px;
+  }
 }
 
 .timer-widget {
