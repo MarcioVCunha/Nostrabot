@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nostrabot — Patch Notes</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <div class="topbar">
+        <h1>Patch Notes</h1>
+        <button id="themeToggle" class="secondary" type="button">
+          Tema: Claro
+        </button>
+      </div>
+
+      <p class="subtitle">
+        Historico de versoes do <strong>Nostrabot</strong>.
+      </p>
+
+      <section class="card patch-card">
+        <div class="patch-header">
+          <h2>v1.1.0</h2>
+          <span class="patch-badge">Atual</span>
+        </div>
+        <p class="hint patch-date">Julho de 2026</p>
+
+        <h3>O que o app faz agora</h3>
+        <ul class="patch-list">
+          <li>
+            Escolhe audios com <strong>peso</strong>: quanto mais tempo sem tocar,
+            maior a chance no timer.
+          </li>
+          <li>
+            Pesos salvos no navegador (<code>localStorage</code>), por dispositivo.
+          </li>
+          <li>
+            Audios novos entram com o maior peso atual, para tocarem mais cedo.
+          </li>
+          <li>
+            Timer lembra o ultimo tempo configurado e continua apos recarregar a
+            pagina.
+          </li>
+          <li>
+            Tela cheia do timer com anel de progresso, cancelamento e aviso ao
+            sair da pagina com timer ativo.
+          </li>
+          <li>
+            Fallback "Toque para reproduzir" quando o navegador bloqueia autoplay.
+          </li>
+          <li>
+            Badge de peso em cada audio, confirmacao ao excluir e progresso no
+            upload de varios arquivos.
+          </li>
+          <li>
+            Tema claro/escuro com anel do timer adaptado ao modo escuro.
+          </li>
+          <li>
+            Wake Lock para evitar que a tela apague durante o timer (quando
+            suportado).
+          </li>
+        </ul>
+
+        <h3>Melhorias tecnicas</h3>
+        <ul class="patch-list">
+          <li>Renomeado para <strong>Nostrabot</strong>.</li>
+          <li>Frontend unificado em <code>public/</code> (sem duplicatas).</li>
+          <li>API valida URLs de exclusao e limita upload a 25 MB.</li>
+          <li>Peso so atualiza quando o audio realmente comeca a tocar no timer.</li>
+          <li>"Reproduzir agora" nao altera os pesos.</li>
+        </ul>
+      </section>
+
+      <section class="card patch-card">
+        <div class="patch-header">
+          <h2>v1.0.0</h2>
+        </div>
+        <p class="hint patch-date">Versao inicial</p>
+
+        <h3>O que o app fazia</h3>
+        <ul class="patch-list">
+          <li>Upload de audios para o Vercel Blob (nuvem).</li>
+          <li>Lista de audios salvos com reproducao manual e exclusao.</li>
+          <li>
+            Timer configuravel em segundos ou minutos com tela de contagem
+            regressiva.
+          </li>
+          <li>
+            Ao terminar o timer, escolhia um audio <strong>totalmente
+            aleatorio</strong> (mesma chance para todos).
+          </li>
+          <li>Tema claro e escuro com preferencia salva no navegador.</li>
+          <li>Cancelamento do timer e da reproducao em andamento.</li>
+        </ul>
+
+        <h3>Limitacoes da v1.0</h3>
+        <ul class="patch-list">
+          <li>Sem prioridade para audios que tocavam menos.</li>
+          <li>Timer perdido ao recarregar a pagina.</li>
+          <li>Sem feedback quando autoplay era bloqueado no celular.</li>
+          <li>Exclusao de audio sem confirmacao.</li>
+          <li>Erros de validacao do timer ficavam invisiveis na tela principal.</li>
+        </ul>
+      </section>
+
+      <footer class="page-footer">
+        <a class="footer-link" href="./">Voltar ao Nostrabot</a>
+        <span class="footer-version">v1.1.0</span>
+      </footer>
+    </main>
+
+    <script>
+      const themeToggle = document.getElementById("themeToggle");
+
+      function getPreferredTheme() {
+        const stored = localStorage.getItem("theme");
+        if (stored === "light" || stored === "dark") return stored;
+        const prefersDark =
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+        return prefersDark ? "dark" : "light";
+      }
+
+      function applyTheme(theme) {
+        document.body.setAttribute("data-theme", theme);
+        if (!themeToggle) return;
+        themeToggle.textContent =
+          theme === "dark" ? "Tema: Escuro" : "Tema: Claro";
+      }
+
+      applyTheme(getPreferredTheme());
+
+      if (themeToggle) {
+        themeToggle.addEventListener("click", () => {
+          const current = document.body.getAttribute("data-theme") || "light";
+          const next = current === "dark" ? "light" : "dark";
+          localStorage.setItem("theme", next);
+          applyTheme(next);
+        });
+      }
+    </script>
+  </body>
+</html>
