@@ -17,9 +17,14 @@
   --button-danger-bg: #c43838;
   --button-danger-border: #c43838;
   --status: #1d4f91;
+  --status-error: #b42318;
   --hint: #667085;
   --audio-item-border: #e2e8f0;
   --audio-meta: #667085;
+  --ring-bg: #e5eaf2;
+  --ring-progress: #0b6bcb;
+  --weight-bg: #e8f1fb;
+  --weight-text: #1d4f91;
 }
 
 body[data-theme="dark"] {
@@ -37,9 +42,14 @@ body[data-theme="dark"] {
   --button-danger-bg: #ff4d4d;
   --button-danger-border: #ff4d4d;
   --status: #8ab4ff;
+  --status-error: #ff8a8a;
   --hint: #a1adbf;
   --audio-item-border: #2a3a5a;
   --audio-meta: #a1adbf;
+  --ring-bg: #1e2a44;
+  --ring-progress: #2b8cff;
+  --weight-bg: #152238;
+  --weight-text: #8ab4ff;
 }
 
 body {
@@ -131,6 +141,10 @@ button:disabled {
   color: var(--status);
 }
 
+.status.is-error {
+  color: var(--status-error);
+}
+
 .hint {
   color: var(--hint);
   margin-top: 0;
@@ -167,13 +181,33 @@ button:disabled {
   align-items: center;
 }
 
+.audio-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
 .audio-name {
   font-weight: bold;
   word-break: break-word;
 }
 
+.audio-weight {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: bold;
+  background: var(--weight-bg);
+  color: var(--weight-text);
+  white-space: nowrap;
+}
+
 .audio-meta {
-  margin: 6px 0 10px;
+  margin: 6px 0 0;
   font-size: 0.9rem;
   color: var(--audio-meta);
 }
@@ -210,13 +244,13 @@ button:disabled {
 
 .ring-bg {
   fill: none;
-  stroke: #e5eaf2;
+  stroke: var(--ring-bg);
   stroke-width: 12;
 }
 
 .ring-progress {
   fill: none;
-  stroke: #0b6bcb;
+  stroke: var(--ring-progress);
   stroke-width: 12;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.25s linear;
@@ -239,12 +273,8 @@ button:disabled {
 
 .time-caption {
   margin-top: 4px;
-  color: #667085;
-  font-size: 0.92rem;
-}
-
-body[data-theme="dark"] .time-caption {
   color: var(--hint);
+  font-size: 0.92rem;
 }
 
 .timer-widget--fullscreen {
@@ -267,3 +297,22 @@ body[data-theme="dark"] .time-caption {
   height: 100%;
 }
 
+.play-fallback {
+  font-size: 1.05rem;
+  padding: 12px 20px;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.play-fallback[hidden] {
+  display: none !important;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}

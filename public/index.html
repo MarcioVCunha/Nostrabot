@@ -3,22 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Audio Timer Vercel</title>
+    <title>Nostrabot</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="container">
       <div id="setupScreen">
         <div class="topbar">
-          <h1>Audio Timer Vercel</h1>
+          <h1>Nostrabot</h1>
           <button id="themeToggle" class="secondary" type="button">
             Tema: Claro
           </button>
         </div>
 
         <p class="subtitle">
-          Envie arquivos de audio, salve na Vercel e agende a
-          reproducao.
+          Envie arquivos de audio, salve na nuvem e agende a reproducao com
+          prioridade para os que tocam menos.
         </p>
 
         <section class="card">
@@ -27,13 +27,14 @@
             <input id="audioInput" type="file" accept="audio/*" multiple />
             <button id="saveButton">Enviar para Vercel</button>
           </div>
-          <p id="uploadStatus" class="status"></p>
+          <p id="uploadStatus" class="status" role="status" aria-live="polite"></p>
         </section>
 
         <section class="card">
           <h2>2) Audios salvos</h2>
           <p class="hint">
-            Os arquivos ficam salvos no Vercel Blob (cloud).
+            Os arquivos ficam salvos no Vercel Blob (cloud). O peso indica a
+            chance relativa de tocar no timer.
           </p>
           <details class="audio-dropdown">
             <summary id="audioDropdownSummary">Audios salvos (0)</summary>
@@ -42,9 +43,10 @@
         </section>
 
         <section class="card">
-          <h2>3) Timer com reproducao aleatoria</h2>
+          <h2>3) Timer com reproducao ponderada</h2>
           <p class="hint">
-            Quando o timer terminar, um audio aleatorio da lista sera reproduzido.
+            Quando o timer terminar, um audio sera escolhido com peso: quanto
+            mais tempo sem tocar, maior a chance.
           </p>
 
           <div class="row">
@@ -61,6 +63,7 @@
             </select>
             <button id="startRandomTimerButton">Iniciar timer</button>
           </div>
+          <p id="timerSetupStatus" class="status" role="status" aria-live="polite"></p>
         </section>
       </div>
 
@@ -97,10 +100,18 @@
             <div id="timerStateLabel" class="time-caption">Aguardando</div>
           </div>
         </div>
+
+        <button
+          id="playFallbackButton"
+          class="play-fallback"
+          type="button"
+          hidden
+        >
+          Toque para reproduzir
+        </button>
       </div>
     </main>
 
     <script src="./app.js"></script>
   </body>
 </html>
-

@@ -10,6 +10,19 @@ function getSafeFileName(name) {
     .replace(/_+/g, "_");
 }
 
+function isAllowedBlobUrl(url) {
+  if (!url || typeof url !== "string") return false;
+
+  try {
+    const parsed = new URL(url);
+    return parsed.pathname.includes("/audios/");
+  } catch (error) {
+    return false;
+  }
+}
+
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+
 module.exports = async function handler(req, res) {
   try {
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
@@ -25,6 +38,13 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "POST") {
+      const contentLength = Number(req.headers["content-length"] || 0);
+      if (contentLength > MAX_UPLOAD_BYTES) {
+        return sendJson(res, 413, {
+          error: "Arquivo muito grande. Limite de 25 MB por upload."
+        });
+      }
+
       const encodedName = req.headers["x-file-name"];
       const originalName = encodedName
         ? decodeURIComponent(encodedName)
@@ -46,6 +66,12 @@ module.exports = async function handler(req, res) {
       const { url } = req.query;
       if (!url) {
         return sendJson(res, 400, { error: "Parametro 'url' obrigatorio." });
+      }
+
+      if (!isAllowedBlobUrl(url)) {
+        return sendJson(res, 400, {
+          error: "URL de audio invalida para exclusao."
+        });
       }
 
       await del(url);

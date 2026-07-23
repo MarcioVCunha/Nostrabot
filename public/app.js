@@ -8,18 +8,27 @@ const setupScreen = document.getElementById("setupScreen");
 const timerScreen = document.getElementById("timerScreen");
 const timerAmountInput = document.getElementById("timerAmount");
 const timerUnitSelect = document.getElementById("timerUnit");
+const timerSetupStatus = document.getElementById("timerSetupStatus");
 const startRandomTimerButton = document.getElementById("startRandomTimerButton");
 const cancelRandomTimerButton = document.getElementById("cancelRandomTimerButton");
+const playFallbackButton = document.getElementById("playFallbackButton");
 const timerProgressRing = document.getElementById("timerProgressRing");
 const timeRemainingLabel = document.getElementById("timeRemainingLabel");
 const timerStateLabel = document.getElementById("timerStateLabel");
 
 let cachedRecords = [];
+let audioWeights = {};
 let activeCountdown = null;
 let isTimerRunning = false;
 let isAudioPlaying = false;
 let activeAudio = null;
-const ringRadius = Number(timerProgressRing?.getAttribute("r")) || 76;
+let wakeLock = null;
+let pendingPlay = null;
+
+const AUDIO_WEIGHTS_KEY = "audioPlayWeights";
+const TIMER_PREFS_KEY = "timerPrefs";
+const ACTIVE_TIMER_KEY = "activeTimer";
+const ringRadius = Number(timerProgressRing?.getAttribute("r")) || 180;
 const ringCircumference = 2 * Math.PI * ringRadius;
 
 timerProgressRing.style.strokeDasharray = `${ringCircumference}`;
@@ -39,22 +48,39 @@ function applyTheme(theme) {
   themeToggle.textContent = theme === "dark" ? "Tema: Escuro" : "Tema: Claro";
 }
 
+function showSetupFeedback(message, isError = true) {
+  if (!timerSetupStatus) return;
+  timerSetupStatus.textContent = message;
+  timerSetupStatus.classList.toggle("is-error", isError);
+}
+
+function clearSetupFeedback() {
+  if (!timerSetupStatus) return;
+  timerSetupStatus.textContent = "";
+  timerSetupStatus.classList.remove("is-error");
+}
+
+function showUploadStatus(message, isError = false) {
+  if (!uploadStatus) return;
+  uploadStatus.textContent = message;
+  uploadStatus.classList.toggle("is-error", isError);
+}
+
 function updateUiLock() {
-  const lockTimer = isTimerRunning || isAudioPlaying;
-  const lockPlay = isTimerRunning || isAudioPlaying;
+  const locked = isTimerRunning || isAudioPlaying;
 
-  if (startRandomTimerButton) startRandomTimerButton.disabled = lockTimer;
-  if (timerAmountInput) timerAmountInput.disabled = lockTimer;
-  if (timerUnitSelect) timerUnitSelect.disabled = lockTimer;
+  if (startRandomTimerButton) startRandomTimerButton.disabled = locked;
+  if (timerAmountInput) timerAmountInput.disabled = locked;
+  if (timerUnitSelect) timerUnitSelect.disabled = locked;
 
-  // Permite cancelar também durante o áudio tocando, para voltar para a tela de setup.
-  if (cancelRandomTimerButton)
+  if (cancelRandomTimerButton) {
     cancelRandomTimerButton.disabled = !(isTimerRunning || isAudioPlaying);
+  }
 
   document
-    .querySelectorAll('#audioList button[data-role="play"]')
+    .querySelectorAll('#audioList button[data-role="play"], #audioList button[data-role="delete"]')
     .forEach((btn) => {
-      btn.disabled = lockPlay;
+      btn.disabled = locked;
     });
 }
 
@@ -68,6 +94,97 @@ function showSetupScreen() {
   if (timerScreen) timerScreen.hidden = true;
   if (setupScreen) setupScreen.hidden = false;
   document.body.style.overflow = "";
+  hidePlayFallback();
+}
+
+function hidePlayFallback() {
+  pendingPlay = null;
+  if (playFallbackButton) playFallbackButton.hidden = true;
+}
+
+function showPlayFallback(url, onPlayStart) {
+  pendingPlay = { url, onPlayStart };
+  if (playFallbackButton) playFallbackButton.hidden = false;
+  timerStateLabel.textContent = "Toque para reproduzir";
+}
+
+async function requestWakeLock() {
+  if (!("wakeLock" in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => {
+      wakeLock = null;
+    });
+  } catch (error) {
+    console.warn("Wake Lock indisponivel:", error);
+  }
+}
+
+function releaseWakeLock() {
+  if (!wakeLock) return;
+  wakeLock.release().catch(() => {});
+  wakeLock = null;
+}
+
+function loadTimerPrefs() {
+  try {
+    const stored = localStorage.getItem(TIMER_PREFS_KEY);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
+  } catch (error) {
+    console.error("Erro ao carregar preferencias do timer:", error);
+    return null;
+  }
+}
+
+function saveTimerPrefs(amount, unit) {
+  localStorage.setItem(
+    TIMER_PREFS_KEY,
+    JSON.stringify({ amount, unit })
+  );
+}
+
+function applyTimerPrefs() {
+  const prefs = loadTimerPrefs();
+  if (!prefs) return;
+  if (prefs.amount != null) timerAmountInput.value = prefs.amount;
+  if (prefs.unit === "seconds" || prefs.unit === "minutes") {
+    timerUnitSelect.value = prefs.unit;
+  }
+}
+
+function persistActiveTimer() {
+  if (!activeCountdown) {
+    sessionStorage.removeItem(ACTIVE_TIMER_KEY);
+    return;
+  }
+
+  sessionStorage.setItem(
+    ACTIVE_TIMER_KEY,
+    JSON.stringify({
+      endAt: activeCountdown.endAt,
+      durationMs: activeCountdown.durationMs,
+    })
+  );
+}
+
+function loadActiveTimer() {
+  try {
+    const stored = sessionStorage.getItem(ACTIVE_TIMER_KEY);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    if (!parsed?.endAt || !parsed?.durationMs) return null;
+    return parsed;
+  } catch (error) {
+    console.error("Erro ao carregar timer ativo:", error);
+    return null;
+  }
+}
+
+function clearActiveTimerStorage() {
+  sessionStorage.removeItem(ACTIVE_TIMER_KEY);
 }
 
 if (themeToggle) {
@@ -79,6 +196,24 @@ if (themeToggle) {
     applyTheme(next);
   });
 }
+
+window.addEventListener("beforeunload", (event) => {
+  if (!isTimerRunning && !activeCountdown) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
+
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState === "visible") {
+    if (isTimerRunning || isAudioPlaying) {
+      await requestWakeLock();
+    }
+    updateCountdownUi();
+    return;
+  }
+
+  releaseWakeLock();
+});
 
 function formatBytes(bytes) {
   if (!bytes) return "0 B";
@@ -143,27 +278,45 @@ async function deleteAudioRecord(url) {
   }
 }
 
-function playUrl(url) {
+function cleanupActiveAudio() {
+  if (!activeAudio) return;
+  try {
+    activeAudio.pause();
+  } catch (error) {
+    // ignore
+  }
+  activeAudio = null;
+}
+
+function playUrl(url, options = {}) {
+  const { onPlayStart = null, allowFallback = false } = options;
   if (!url) return;
 
-  // Se por algum motivo já existir um áudio tocando, para aqui.
-  if (activeAudio) {
-    try {
-      activeAudio.pause();
-    } catch (e) {
-      // ignore
-    }
-  }
+  cleanupActiveAudio();
+  hidePlayFallback();
 
   isAudioPlaying = true;
   updateUiLock();
 
   activeAudio = new Audio(url);
+  let playStarted = false;
+
+  const markPlayStarted = () => {
+    if (playStarted) return;
+    playStarted = true;
+    if (onPlayStart) onPlayStart();
+    timerStateLabel.textContent = "Tocando...";
+    hidePlayFallback();
+  };
+
+  activeAudio.addEventListener("playing", markPlayStarted, { once: true });
+
   activeAudio.addEventListener(
     "ended",
     () => {
       isAudioPlaying = false;
       activeAudio = null;
+      releaseWakeLock();
       timerStateLabel.textContent = "Aguardando";
       updateUiLock();
       showSetupScreen();
@@ -176,6 +329,7 @@ function playUrl(url) {
     () => {
       isAudioPlaying = false;
       activeAudio = null;
+      releaseWakeLock();
       timerStateLabel.textContent = "Erro ao tocar audio";
       updateUiLock();
       showSetupScreen();
@@ -183,16 +337,107 @@ function playUrl(url) {
     { once: true }
   );
 
-  // Dispara a reprodução; se falhar, o evento "error" deve ocorrer.
   activeAudio.play().catch((error) => {
     console.error("Erro ao reproduzir audio:", error);
+    isAudioPlaying = false;
+    activeAudio = null;
+    updateUiLock();
+
+    if (allowFallback) {
+      showTimerScreen();
+      showPlayFallback(url, onPlayStart);
+      return;
+    }
+
+    showUploadStatus(
+      "Nao foi possivel reproduzir automaticamente. Tente novamente.",
+      true
+    );
+    showSetupScreen();
   });
 }
 
-function getRandomRecord(records) {
+function loadAudioWeights() {
+  try {
+    const stored = localStorage.getItem(AUDIO_WEIGHTS_KEY);
+    if (!stored) return {};
+    const parsed = JSON.parse(stored);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.error("Erro ao carregar pesos dos audios:", error);
+    return {};
+  }
+}
+
+function saveAudioWeights(weights) {
+  localStorage.setItem(AUDIO_WEIGHTS_KEY, JSON.stringify(weights));
+}
+
+function getMaxAudioWeight(weights) {
+  const values = Object.values(weights);
+  if (!values.length) return 1;
+  return Math.max(...values);
+}
+
+function syncAudioWeights(records) {
+  const weights = loadAudioWeights();
+  const recordUrls = new Set(records.map((record) => record.url));
+  const maxWeight = getMaxAudioWeight(weights);
+
+  for (const url of Object.keys(weights)) {
+    if (!recordUrls.has(url)) {
+      delete weights[url];
+    }
+  }
+
+  for (const record of records) {
+    if (weights[record.url] == null) {
+      weights[record.url] = maxWeight;
+    }
+  }
+
+  saveAudioWeights(weights);
+  return weights;
+}
+
+function getWeightedRandomRecord(records, weights) {
   if (!records.length) return null;
-  const idx = Math.floor(Math.random() * records.length);
-  return records[idx];
+
+  const totalWeight = records.reduce(
+    (sum, record) => sum + (weights[record.url] ?? 1),
+    0
+  );
+  let roll = Math.random() * totalWeight;
+
+  for (const record of records) {
+    roll -= weights[record.url] ?? 1;
+    if (roll <= 0) return record;
+  }
+
+  return records[records.length - 1];
+}
+
+function recordRandomPlay(chosenUrl, records) {
+  const weights = { ...audioWeights };
+
+  for (const record of records) {
+    if (record.url === chosenUrl) {
+      weights[record.url] = 1;
+    } else {
+      weights[record.url] = (weights[record.url] ?? 1) + 1;
+    }
+  }
+
+  audioWeights = weights;
+  saveAudioWeights(weights);
+  renderAudioWeights();
+}
+
+function renderAudioWeights() {
+  document.querySelectorAll("[data-audio-weight]").forEach((badge) => {
+    const url = badge.dataset.audioWeight;
+    badge.textContent = `peso ${audioWeights[url] ?? 1}`;
+  });
 }
 
 function toRemainingLabel(ms) {
@@ -212,6 +457,7 @@ function stopCountdown(stateText) {
   if (activeCountdown?.timeoutId) clearTimeout(activeCountdown.timeoutId);
   if (activeCountdown?.intervalId) clearInterval(activeCountdown.intervalId);
   activeCountdown = null;
+  clearActiveTimerStorage();
   if (stateText) timerStateLabel.textContent = stateText;
   setRingProgress(0);
   timeRemainingLabel.textContent = "--:--";
@@ -219,12 +465,82 @@ function stopCountdown(stateText) {
 
 function updateCountdownUi() {
   if (!activeCountdown) return;
+
   const now = Date.now();
   const remaining = Math.max(0, activeCountdown.endAt - now);
   const elapsed = activeCountdown.durationMs - remaining;
   const percent = (elapsed / activeCountdown.durationMs) * 100;
+
   setRingProgress(percent);
   timeRemainingLabel.textContent = toRemainingLabel(remaining);
+
+  if (remaining <= 0 && isTimerRunning) {
+    handleTimerComplete();
+  }
+}
+
+function handleTimerComplete() {
+  const countdown = activeCountdown;
+  if (!countdown) return;
+
+  activeCountdown = null;
+  clearActiveTimerStorage();
+
+  if (countdown.intervalId) clearInterval(countdown.intervalId);
+  if (countdown.timeoutId) clearTimeout(countdown.timeoutId);
+
+  const chosen = getWeightedRandomRecord(cachedRecords, audioWeights);
+  if (!chosen) {
+    timerStateLabel.textContent = "Sem audios para tocar";
+    isTimerRunning = false;
+    releaseWakeLock();
+    updateUiLock();
+    showSetupScreen();
+    return;
+  }
+
+  isTimerRunning = false;
+  updateUiLock();
+  setRingProgress(100);
+  timeRemainingLabel.textContent = "00:00";
+  timerStateLabel.textContent = "Tocando...";
+
+  playUrl(chosen.url, {
+    allowFallback: true,
+    onPlayStart: () => {
+      recordRandomPlay(chosen.url, cachedRecords);
+    },
+  });
+}
+
+function startCountdown(durationMs, resumeState = null) {
+  stopCountdown();
+
+  const startAt = Date.now();
+  const endAt = resumeState?.endAt ?? startAt + durationMs;
+  const totalDurationMs = resumeState?.durationMs ?? durationMs;
+  const remainingMs = Math.max(0, endAt - startAt);
+
+  isTimerRunning = true;
+  updateUiLock();
+  showTimerScreen();
+  requestWakeLock();
+
+  if (cancelRandomTimerButton) cancelRandomTimerButton.disabled = false;
+  timerStateLabel.textContent = "Timer rodando";
+
+  const intervalId = setInterval(updateCountdownUi, 250);
+  const timeoutId = setTimeout(handleTimerComplete, remainingMs);
+
+  activeCountdown = {
+    durationMs: totalDurationMs,
+    endAt,
+    intervalId,
+    timeoutId,
+  };
+
+  persistActiveTimer();
+  updateCountdownUi();
 }
 
 function buildAudioItem(record) {
@@ -234,9 +550,19 @@ function buildAudioItem(record) {
   const top = document.createElement("div");
   top.className = "audio-top";
 
+  const nameRow = document.createElement("div");
+  nameRow.className = "audio-name-row";
+
   const name = document.createElement("div");
   name.className = "audio-name";
   name.textContent = getDisplayName(record);
+
+  const weightBadge = document.createElement("span");
+  weightBadge.className = "audio-weight";
+  weightBadge.dataset.audioWeight = record.url;
+  weightBadge.textContent = `peso ${audioWeights[record.url] ?? 1}`;
+
+  nameRow.append(name, weightBadge);
 
   const actions = document.createElement("div");
   actions.className = "row";
@@ -247,22 +573,36 @@ function buildAudioItem(record) {
   playNowButton.textContent = "Reproduzir agora";
   playNowButton.addEventListener("click", () => {
     if (isTimerRunning || isAudioPlaying) return;
+    clearSetupFeedback();
     playUrl(record.url);
   });
 
   const deleteButton = document.createElement("button");
   deleteButton.className = "danger";
+  deleteButton.dataset.role = "delete";
   deleteButton.textContent = "Excluir";
   deleteButton.addEventListener("click", async () => {
-    await deleteAudioRecord(record.url);
-    await refreshList();
-    if (!cachedRecords.length) {
-      stopCountdown("Sem audios salvos");
+    const displayName = getDisplayName(record);
+    const confirmed = window.confirm(`Excluir "${displayName}"?`);
+    if (!confirmed) return;
+
+    deleteButton.disabled = true;
+    try {
+      await deleteAudioRecord(record.url);
+      await refreshList();
+      if (!cachedRecords.length) {
+        stopCountdown("Sem audios salvos");
+      }
+      showUploadStatus("Audio excluido com sucesso.");
+    } catch (error) {
+      console.error(error);
+      showUploadStatus(error.message || "Erro ao excluir audio.", true);
+      deleteButton.disabled = false;
     }
   });
 
   actions.append(playNowButton, deleteButton);
-  top.append(name, actions);
+  top.append(nameRow, actions);
 
   const meta = document.createElement("p");
   meta.className = "audio-meta";
@@ -280,6 +620,7 @@ async function refreshList() {
     return bTime - aTime;
   });
   cachedRecords = records;
+  audioWeights = syncAudioWeights(records);
 
   audioList.innerHTML = "";
   if (records.length === 0) {
@@ -292,7 +633,9 @@ async function refreshList() {
     return;
   }
 
-  if (audioDropdownSummary) audioDropdownSummary.textContent = `Audios salvos (${records.length})`;
+  if (audioDropdownSummary) {
+    audioDropdownSummary.textContent = `Audios salvos (${records.length})`;
+  }
   records.forEach((record) => {
     audioList.appendChild(buildAudioItem(record));
   });
@@ -300,75 +643,35 @@ async function refreshList() {
 }
 
 function startRandomTimer() {
+  clearSetupFeedback();
+
   const amount = Number(timerAmountInput.value);
   if (!Number.isFinite(amount) || amount <= 0) {
-    timerStateLabel.textContent = "Informe um tempo valido";
+    showSetupFeedback("Informe um tempo valido.");
     return;
   }
 
   if (!cachedRecords.length) {
-    timerStateLabel.textContent = "Nenhum audio salvo";
+    showSetupFeedback("Nenhum audio salvo.");
     return;
   }
 
-  isTimerRunning = true;
-  updateUiLock();
-  showTimerScreen();
+  const unit = timerUnitSelect.value;
+  saveTimerPrefs(amount, unit);
 
-  const multiplier = timerUnitSelect.value === "minutes" ? 60_000 : 1_000;
+  const multiplier = unit === "minutes" ? 60_000 : 1_000;
   const durationMs = amount * multiplier;
-  const startAt = Date.now();
-  const endAt = startAt + durationMs;
-
-  stopCountdown();
-  if (cancelRandomTimerButton) cancelRandomTimerButton.disabled = false;
-  timerStateLabel.textContent = "Timer rodando";
-
-  const intervalId = setInterval(updateCountdownUi, 250);
-  const timeoutId = setTimeout(() => {
-    const chosen = getRandomRecord(cachedRecords);
-    if (chosen) {
-      // Remove o nome do audio do layout do timer.
-      timerStateLabel.textContent = "Tocando...";
-      isTimerRunning = false;
-      updateUiLock();
-      playUrl(chosen.url);
-    } else {
-      timerStateLabel.textContent = "Sem audios para tocar";
-      isTimerRunning = false;
-      updateUiLock();
-      showSetupScreen();
-    }
-    if (activeCountdown?.intervalId) clearInterval(activeCountdown.intervalId);
-    activeCountdown = null;
-    setRingProgress(100);
-    timeRemainingLabel.textContent = "00:00";
-  }, durationMs);
-
-  activeCountdown = {
-    durationMs,
-    endAt,
-    intervalId,
-    timeoutId,
-  };
-  updateCountdownUi();
+  startCountdown(durationMs);
 }
 
 function cancelRandomTimer() {
   if (!activeCountdown && !isAudioPlaying) return;
 
   isTimerRunning = false;
-
-  // Se o áudio já começou, pausa e volta para o setup.
-  if (activeAudio) {
-    try {
-      activeAudio.pause();
-    } catch (e) {
-      // ignore
-    }
-    activeAudio = null;
-    isAudioPlaying = false;
-  }
+  cleanupActiveAudio();
+  isAudioPlaying = false;
+  releaseWakeLock();
+  hidePlayFallback();
 
   updateUiLock();
   if (activeCountdown) stopCountdown("Timer cancelado");
@@ -378,50 +681,92 @@ function cancelRandomTimer() {
 async function handleSaveFiles() {
   const files = Array.from(audioInput.files || []);
   if (files.length === 0) {
-    uploadStatus.textContent = "Escolha ao menos um arquivo de audio.";
+    showUploadStatus("Escolha ao menos um arquivo de audio.", true);
     return;
   }
 
   saveButton.disabled = true;
-  uploadStatus.textContent = "Salvando...";
 
   try {
-    for (const file of files) {
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      showUploadStatus(`Enviando ${index + 1} de ${files.length}...`);
       await uploadAudioFile(file);
     }
 
     audioInput.value = "";
-    uploadStatus.textContent = `${files.length} arquivo(s) salvo(s) com sucesso.`;
+    showUploadStatus(`${files.length} arquivo(s) salvo(s) com sucesso.`);
     await refreshList();
   } catch (error) {
     console.error(error);
-    uploadStatus.textContent = error?.message || "Erro ao salvar os arquivos.";
+    showUploadStatus(error?.message || "Erro ao salvar os arquivos.", true);
   } finally {
     saveButton.disabled = false;
   }
 }
 
+async function resumeTimerIfStored() {
+  const stored = loadActiveTimer();
+  if (!stored) return;
+
+  const remaining = stored.endAt - Date.now();
+  if (remaining > 0) {
+    startCountdown(remaining, {
+      endAt: stored.endAt,
+      durationMs: stored.durationMs,
+    });
+    return;
+  }
+
+  clearActiveTimerStorage();
+  if (!cachedRecords.length) return;
+
+  showTimerScreen();
+  timerStateLabel.textContent = "Timer encerrado";
+  const chosen = getWeightedRandomRecord(cachedRecords, audioWeights);
+  if (!chosen) return;
+
+  playUrl(chosen.url, {
+    allowFallback: true,
+    onPlayStart: () => {
+      recordRandomPlay(chosen.url, cachedRecords);
+    },
+  });
+}
+
 async function init() {
   try {
-    // Estado inicial: sempre mostra a tela de setup ao carregar.
     isTimerRunning = false;
     isAudioPlaying = false;
     activeAudio = null;
     activeCountdown = null;
     showSetupScreen();
+    applyTimerPrefs();
 
     saveButton.addEventListener("click", handleSaveFiles);
     startRandomTimerButton.addEventListener("click", startRandomTimer);
     cancelRandomTimerButton.addEventListener("click", cancelRandomTimer);
+
+    if (playFallbackButton) {
+      playFallbackButton.addEventListener("click", () => {
+        if (!pendingPlay) return;
+        const { url, onPlayStart } = pendingPlay;
+        playUrl(url, {
+          allowFallback: true,
+          onPlayStart,
+        });
+      });
+    }
+
     await refreshList();
+    await resumeTimerIfStored();
     timerStateLabel.textContent = "Aguardando";
     updateUiLock();
   } catch (error) {
     console.error(error);
-    uploadStatus.textContent = error?.message || "Erro ao conectar com a API.";
+    showUploadStatus(error?.message || "Erro ao conectar com a API.", true);
     saveButton.disabled = true;
   }
 }
 
 init();
-
