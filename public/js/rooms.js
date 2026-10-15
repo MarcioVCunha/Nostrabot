@@ -1,3 +1,5 @@
+import { friendlyUserError } from "./errors.js";
+
 let clockOffsetMs = 0;
 
 export function getRoomCodeFromLocation() {
@@ -38,7 +40,7 @@ export async function syncServerClock() {
 
 async function readRoomError(response, fallback) {
   const data = await response.json().catch(() => ({}));
-  return data.error || fallback;
+  return friendlyUserError(data.error || fallback, fallback);
 }
 
 export async function createRoom(name = "Sala Nostrabot") {

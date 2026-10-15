@@ -1,14 +1,9 @@
-const { describe, it, mock } = require("node:test");
+const { describe, it } = require("node:test");
 const assert = require("node:assert/strict");
 const Module = require("module");
 
-/**
- * Reproduz o bug: get() 403 + head not-found deve virar fallback,
- * nao relancar o 403 original.
- */
-describe("writeJsonBlob create-only vs conditional overwrite", () => {
-  it("sem ifMatch nao passa allowOverwrite (evita clobber)", async () => {
-    const Module = require("module");
+describe("writeJsonBlob always allowOverwrite", () => {
+  it("sempre passa allowOverwrite:true e addRandomSuffix:false", async () => {
     const originalLoad = Module._load;
     let seen = null;
 
@@ -31,21 +26,37 @@ describe("writeJsonBlob create-only vs conditional overwrite", () => {
     try {
       delete require.cache[require.resolve("../lib/json-blob.js")];
       const { writeJsonBlob } = require("../lib/json-blob.js");
-      await writeJsonBlob("data/audios-index.json", { version: 1, items: [] });
-      assert.equal(seen.allowOverwrite, undefined);
-      assert.equal(seen.ifMatch, undefined);
+
+      await writeJsonBlob("rooms/ABCD.json", { code: "ABCD", state: {} });
+      assert.equal(seen.allowOverwrite, true);
+      assert.equal(seen.addRandomSuffix, false);
 
       await writeJsonBlob(
         "data/audios-index.json",
-        { version: 1, items: [{ id: "1" }] },
+        { version: 1, items: [] },
         { ifMatch: '"etag-1"' }
       );
       assert.equal(seen.allowOverwrite, true);
+      assert.equal(seen.addRandomSuffix, false);
       assert.equal(seen.ifMatch, '"etag-1"');
     } finally {
       Module._load = originalLoad;
       delete require.cache[require.resolve("../lib/json-blob.js")];
     }
+  });
+});
+
+describe("friendlyError", () => {
+  it("mapeia erros tecnicos do Blob para pt-BR curto", () => {
+    delete require.cache[require.resolve("../lib/json-blob.js")];
+    const { friendlyError } = require("../lib/json-blob.js");
+    assert.equal(
+      friendlyError(
+        "Vercel Blob: This blob already exists, use allowOverwrite: true if you want to overwrite it. Or use addRandomSuffix: true"
+      ),
+      "Não foi possível salvar. Tente de novo."
+    );
+    assert.match(friendlyError("Failed to fetch"), /conexão/i);
   });
 });
 

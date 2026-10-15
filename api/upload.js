@@ -5,7 +5,11 @@ const {
   MAX_UPLOAD_BYTES,
   isAudioContentType
 } = require("../lib/blob-helpers");
-const { sendJson, requireBlobToken } = require("../lib/json-blob");
+const {
+  sendJson,
+  requireBlobToken,
+  friendlyError
+} = require("../lib/json-blob");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
@@ -89,7 +93,7 @@ module.exports = async function handler(req, res) {
   } catch (error) {
     console.error(error);
     return sendJson(res, 400, {
-      error: error?.message || "Falha ao autorizar o upload do audio."
+      error: friendlyError(error, "Falha ao autorizar o envio do áudio.")
     });
   }
 };

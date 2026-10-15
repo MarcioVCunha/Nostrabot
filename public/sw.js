@@ -21,6 +21,7 @@ const SHELL = [
   "./js/notifications.js",
   "./js/rooms.js",
   "./js/prank-ad.js",
+  "./js/errors.js",
   "./img/anuncio-chica.png"
 ];
 

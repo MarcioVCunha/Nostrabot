@@ -1,5 +1,9 @@
 const { listPlayHistory, recordPlayEvent } = require("../lib/history-store");
-const { sendJson, requireBlobToken } = require("../lib/json-blob");
+const {
+  sendJson,
+  requireBlobToken,
+  friendlyError
+} = require("../lib/json-blob");
 
 module.exports = async function handler(req, res) {
   if (!requireBlobToken(res)) return;
@@ -32,7 +36,7 @@ module.exports = async function handler(req, res) {
   } catch (error) {
     console.error(error);
     return sendJson(res, 500, {
-      error: error?.message || "Erro interno no historico."
+      error: friendlyError(error, "Não foi possível atualizar o histórico.")
     });
   }
 };

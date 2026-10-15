@@ -24,6 +24,7 @@ import {
   subscribeRoom,
   syncServerClock
 } from "./rooms.js";
+import { friendlyUserError } from "./errors.js";
 import { initPrankAd } from "./prank-ad.js";
 import { initThemeToggle } from "./theme.js";
 import { showToast } from "./toast.js";
@@ -97,7 +98,10 @@ if (timerProgressRing) {
 
 function showSetupFeedback(message, isError = true) {
   if (!timerSetupStatus) return;
-  timerSetupStatus.textContent = message;
+  timerSetupStatus.textContent = friendlyUserError(
+    message,
+    "Falha ao iniciar o timer."
+  );
   timerSetupStatus.classList.toggle("is-error", isError);
 }
 
@@ -109,7 +113,9 @@ function clearSetupFeedback() {
 
 function showUploadStatus(message, isError = false) {
   if (!uploadStatus) return;
-  uploadStatus.textContent = message;
+  uploadStatus.textContent = isError
+    ? friendlyUserError(message, "Algo deu errado. Tente de novo.")
+    : message;
   uploadStatus.classList.toggle("is-error", isError);
 }
 
@@ -988,7 +994,9 @@ async function init() {
     }
     startRandomTimerButton.addEventListener("click", () => {
       startRandomTimer().catch((error) => {
-        showSetupFeedback(error.message || "Falha ao iniciar timer.");
+        showSetupFeedback(
+          friendlyUserError(error, "Falha ao iniciar o timer.")
+        );
       });
     });
     cancelRandomTimerButton.addEventListener("click", cancelRandomTimer);
