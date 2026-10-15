@@ -30,6 +30,21 @@ function installBlobMemory() {
       }
       return { url: row.url, etag: row.etag, pathname };
     },
+    get: async (pathname, options = {}) => {
+      const row = store.get(pathname);
+      if (!row) return null;
+      const encoded = new TextEncoder().encode(row.body);
+      return {
+        statusCode: 200,
+        stream: new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoded);
+            controller.close();
+          }
+        }),
+        blob: { etag: row.etag, url: row.url, pathname }
+      };
+    },
     BlobNotFoundError: class BlobNotFoundError extends Error {}
   };
 
