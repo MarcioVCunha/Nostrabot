@@ -1,5 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="Nostrabot">
-  <rect width="192" height="192" rx="36" fill="#0b6bcb"/>
-  <circle cx="96" cy="96" r="58" fill="none" stroke="#e8f1fb" stroke-width="10"/>
-  <path d="M96 52v44l32 18" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <radialGradient id="g" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#2a1f4d"/>
+      <stop offset="55%" stop-color="#120b24"/>
+      <stop offset="100%" stop-color="#07040f"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f0d58c"/>
+      <stop offset="100%" stop-color="#c7923e"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="url(#g)"/>
+  <circle cx="96" cy="96" r="62" fill="none" stroke="url(#gold)" stroke-width="5" opacity="0.9"/>
+  <path d="M118 58c-22 4-38 24-38 48s16 44 38 48c-28-2-50-26-50-52s22-50 50-44z" fill="url(#gold)"/>
+  <circle cx="132" cy="54" r="3.5" fill="#f7e7b0"/>
+  <circle cx="146" cy="78" r="2.2" fill="#f7e7b0"/>
+  <circle cx="138" cy="104" r="2.8" fill="#f7e7b0"/>
 </svg>
