@@ -6,7 +6,11 @@ const {
   updateAudioMeta,
   upsertAudioRecord
 } = require("../lib/audio-index");
-const { sendJson, requireBlobToken } = require("../lib/json-blob");
+const {
+  sendJson,
+  requireBlobToken,
+  friendlyError
+} = require("../lib/json-blob");
 
 module.exports = async function handler(req, res) {
   if (!requireBlobToken(res)) return;
@@ -63,8 +67,7 @@ module.exports = async function handler(req, res) {
         contentType: body.contentType,
         size: body.size,
         uploadedAt: body.uploadedAt || new Date().toISOString(),
-        deletedAt: null,
-        sourceId: body.sourceId || null
+        deletedAt: null
       });
 
       return sendJson(res, 200, { ok: true });
@@ -107,7 +110,7 @@ module.exports = async function handler(req, res) {
   } catch (error) {
     console.error(error);
     return sendJson(res, 500, {
-      error: error?.message || "Erro interno na API de audios."
+      error: friendlyError(error, "Não foi possível processar o áudio.")
     });
   }
 };

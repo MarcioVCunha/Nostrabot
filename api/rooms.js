@@ -4,7 +4,11 @@ const {
   setRoomState,
   startRoomTimer
 } = require("../lib/rooms-store");
-const { sendJson, requireBlobToken } = require("../lib/json-blob");
+const {
+  sendJson,
+  requireBlobToken,
+  friendlyError
+} = require("../lib/json-blob");
 
 module.exports = async function handler(req, res) {
   if (!requireBlobToken(res)) return;
@@ -55,11 +59,13 @@ module.exports = async function handler(req, res) {
     return sendJson(res, 405, { error: "Metodo nao permitido." });
   } catch (error) {
     console.error(error);
-    const status = /nao encontrada/i.test(String(error?.message || ""))
+    const status = /nao encontrada|não encontrada|not found/i.test(
+      String(error?.message || "")
+    )
       ? 404
       : 500;
     return sendJson(res, status, {
-      error: error?.message || "Erro interno nas salas."
+      error: friendlyError(error, "Não foi possível atualizar a sala.")
     });
   }
 };

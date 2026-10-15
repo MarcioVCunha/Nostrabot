@@ -1,6 +1,7 @@
 import { upload } from "https://esm.sh/@vercel/blob@2.3.1/client";
 import { ensureAdminKey, getStoredAdminKey, adminHeaders } from "./admin-key.js";
 import { compressAudioFile } from "./compress.js";
+import { friendlyUserError } from "./errors.js";
 
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
@@ -29,7 +30,7 @@ function extensionFromType(contentType, fallbackName = "") {
 
 async function readErrorMessage(response, fallback) {
   const data = await response.json().catch(() => ({}));
-  return data.error || fallback;
+  return friendlyUserError(data.error || fallback, fallback);
 }
 
 function mapRecord(item) {

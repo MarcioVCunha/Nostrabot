@@ -181,6 +181,7 @@ h2 {
   text-align: center;
   position: relative;
   overflow: auto;
+  gap: 12px;
 }
 
 .panel-header {
@@ -438,10 +439,11 @@ button:disabled {
 }
 
 .stage-setup {
-  width: min(100%, 360px);
+  width: min(100%, 420px);
   display: grid;
-  gap: 10px;
+  gap: 14px;
   justify-items: center;
+  margin: auto 0;
 }
 
 .stage-kicker {
@@ -486,29 +488,35 @@ button:disabled {
 }
 
 .cta-start {
-  min-width: 160px;
-  min-height: 36px;
-  font-size: 0.95rem;
-  border-radius: 10px;
+  min-width: 220px;
+  min-height: 48px;
+  font-size: 1.05rem;
+  border-radius: 12px;
+  padding: 12px 20px;
 }
 
 .timer-stage {
   width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
 }
 
 .timer-widget {
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 160px;
+  height: 160px;
 }
 
 .timer-widget--stage {
-  width: clamp(160px, 42vmin, 280px);
-  height: clamp(160px, 42vmin, 280px);
+  width: clamp(220px, min(52vmin, 70%), 380px);
+  height: clamp(220px, min(52vmin, 70%), 380px);
+  flex-shrink: 0;
 }
 
 .timer-ring {
@@ -549,15 +557,16 @@ button:disabled {
 }
 
 .time-remaining--xl {
-  font-size: clamp(1.6rem, 7vmin, 3.2rem) !important;
+  font-size: clamp(2.4rem, 10vmin, 4.6rem) !important;
   letter-spacing: 0.04em;
   font-family: "Cinzel", serif;
+  line-height: 1;
 }
 
 .time-caption {
-  margin-top: 4px;
+  margin-top: 6px;
   color: var(--hint);
-  font-size: 0.8rem;
+  font-size: 0.95rem;
 }
 
 .timer-screen-actions {
@@ -603,25 +612,30 @@ button:disabled {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   flex: 1;
   min-height: 0;
   overflow: auto;
+  align-content: start;
 }
 
 .history-list li {
-  padding: 6px 8px;
+  padding: 5px 8px;
   border: 1px solid var(--audio-item-border);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--audio-item-bg);
   color: var(--subtitle);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  flex: 0 0 auto;
 }
 
 .history-empty {
   text-align: center;
   color: var(--hint);
+  padding: 8px;
 }
 
 .footer-link {

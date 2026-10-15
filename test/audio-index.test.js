@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const {
   normalizeAudioIndex,
   findOrphanAudioBlobs,
+  toPublicAudioRecord,
   emptyIndex
 } = require("../lib/audio-index");
 const { isNotFound } = require("../lib/json-blob");
@@ -41,6 +42,19 @@ describe("normalizeAudioIndex (readJsonBlob unwrap)", () => {
       normalizeAudioIndex({ data: { version: 1 }, etag: null }),
       emptyIndex()
     );
+  });
+});
+
+describe("toPublicAudioRecord", () => {
+  it("remove sourceId da metadata publica", () => {
+    const publicItem = toPublicAudioRecord({
+      id: "1",
+      name: "x",
+      sourceId: "legacy-supabase-id"
+    });
+    assert.equal(publicItem.id, "1");
+    assert.equal(publicItem.sourceId, undefined);
+    assert.equal("sourceId" in publicItem, false);
   });
 });
 
