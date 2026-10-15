@@ -2,7 +2,8 @@ const { put } = require("@vercel/blob");
 const { checkAdminKey } = require("../lib/admin-auth");
 const {
   findBySourceId,
-  upsertAudioRecord
+  upsertAudioRecord,
+  cleanupOrphanAudios
 } = require("../lib/audio-index");
 const {
   buildAudioPathname,
@@ -131,12 +132,22 @@ module.exports = async function handler(req, res) {
       results.push(entry);
     }
 
+    let orphans = null;
+    try {
+      orphans = await cleanupOrphanAudios();
+    } catch (error) {
+      orphans = {
+        error: error?.message || String(error)
+      };
+    }
+
     return sendJson(res, 200, {
       total: rows.length,
       migrated: results.filter((r) => r.status === "migrated").length,
       skipped: results.filter((r) => r.status === "skipped").length,
       errors: results.filter((r) => r.status === "error").length,
-      results
+      results,
+      orphans
     });
   } catch (error) {
     console.error(error);
