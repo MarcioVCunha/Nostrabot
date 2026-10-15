@@ -519,3 +519,107 @@ button:disabled {
 .patch-date {
   margin: 4px 0 0;
 }
+
+.drop-zone {
+  border: 1px dashed var(--input-border);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--audio-item-bg);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.drop-zone.is-dragover {
+  border-color: var(--button-bg);
+  background: var(--audio-icon-bg);
+}
+
+.drop-zone > p {
+  margin: 0 0 12px;
+  color: var(--hint);
+}
+
+.list-toolbar {
+  margin-bottom: 10px;
+}
+
+.list-toolbar input[type="search"] {
+  flex: 1;
+  min-width: 180px;
+  padding: 7px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+.audio-description {
+  margin: 6px 0 0;
+  color: var(--hint);
+  font-size: 0.9rem;
+}
+
+.upload-progress-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.upload-progress-item {
+  display: grid;
+  gap: 4px;
+}
+
+.upload-progress-label {
+  font-size: 0.85rem;
+  color: var(--hint);
+}
+
+.upload-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ring-bg);
+  overflow: hidden;
+}
+
+.upload-progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--ring-progress);
+  transition: width 0.2s ease;
+}
+
+.upload-progress-item.is-done .upload-progress-fill {
+  background: #1f9d55;
+}
+
+.upload-progress-item.is-error .upload-progress-fill {
+  background: var(--status-error);
+}
+
+.toast-host {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 80;
+  display: grid;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 32px));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  color: var(--text);
+}
+
+.toast-action {
+  flex-shrink: 0;
+  padding: 6px 10px;
+}
