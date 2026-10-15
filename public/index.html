@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nostrabot</title>
     <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "@vercel/blob/client": "https://esm.sh/@vercel/blob@2.3.1/client"
+        }
+      }
+    </script>
   </head>
   <body>
     <main class="container">
@@ -25,8 +32,15 @@
           <h2>1) Enviar audio</h2>
           <div class="row">
             <input id="audioInput" type="file" accept="audio/*" multiple />
-            <button id="saveButton">Enviar para Vercel</button>
+            <button id="saveButton" type="button">Enviar para Vercel</button>
+            <button id="changeAdminKeyButton" class="secondary" type="button">
+              Alterar chave
+            </button>
           </div>
+          <p class="hint">
+            Upload e exclusao pedem a chave de admin uma vez (salva neste
+            dispositivo). Apenas arquivos <code>audio/*</code>, ate 25 MB.
+          </p>
           <p id="uploadStatus" class="status" role="status" aria-live="polite"></p>
         </section>
 
@@ -61,7 +75,7 @@
               <option value="seconds">Segundos</option>
               <option value="minutes">Minutos</option>
             </select>
-            <button id="startRandomTimerButton">Iniciar timer</button>
+            <button id="startRandomTimerButton" type="button">Iniciar timer</button>
           </div>
           <p id="timerSetupStatus" class="status" role="status" aria-live="polite"></p>
         </section>
@@ -113,10 +127,18 @@
 
       <footer class="page-footer">
         <a class="footer-link" href="./patch">Novidades</a>
-        <span class="footer-version">v1.1.0</span>
+        <span class="footer-version">v1.2.0</span>
       </footer>
     </main>
 
-    <script src="./app.js"></script>
+    <script>
+      window.va =
+        window.va ||
+        function () {
+          (window.vaq = window.vaq || []).push(arguments);
+        };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script type="module" src="./js/main.js"></script>
   </body>
 </html>
