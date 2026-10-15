@@ -3,7 +3,6 @@ import {
   deleteAudioRecord,
   getAllAudioRecords,
   restoreAudioRecord,
-  runBlobMigration,
   SchemaMissingError,
   uploadAudioFile
 } from "./api.js";
@@ -38,7 +37,6 @@ const audioInput = document.getElementById("audioInput");
 const saveButton = document.getElementById("saveButton");
 const recordButton = document.getElementById("recordButton");
 const changeAdminKeyButton = document.getElementById("changeAdminKeyButton");
-const migrateBlobButton = document.getElementById("migrateBlobButton");
 const trashToggleButton = document.getElementById("trashToggleButton");
 const audioSearch = document.getElementById("audioSearch");
 const dropZone = document.getElementById("dropZone");
@@ -47,6 +45,7 @@ const uploadStatus = document.getElementById("uploadStatus");
 const audioList = document.getElementById("audioList");
 const audioDropdownSummary = document.getElementById("audioDropdownSummary");
 const themeToggle = document.getElementById("themeToggle");
+const appShell = document.getElementById("appShell");
 const setupScreen = document.getElementById("setupScreen");
 const timerScreen = document.getElementById("timerScreen");
 const timerAmountMinInput = document.getElementById("timerAmountMin");
@@ -138,13 +137,13 @@ function updateUiLock() {
 function showTimerScreen() {
   if (setupScreen) setupScreen.hidden = true;
   if (timerScreen) timerScreen.hidden = false;
-  document.body.style.overflow = "hidden";
+  if (appShell) appShell.classList.add("is-timing");
 }
 
 function showSetupScreen() {
   if (timerScreen) timerScreen.hidden = true;
   if (setupScreen) setupScreen.hidden = false;
-  document.body.style.overflow = "";
+  if (appShell) appShell.classList.remove("is-timing");
   hidePlayFallback();
 }
 
@@ -309,7 +308,7 @@ function playUrl(url, options = {}) {
       isAudioPlaying = false;
       activeAudio = null;
       releaseWakeLock();
-      timerStateLabel.textContent = "Erro ao tocar audio";
+      timerStateLabel.textContent = "Erro ao tocar áudio";
       updateUiLock();
       showSetupScreen();
     },
@@ -327,7 +326,7 @@ function playUrl(url, options = {}) {
       return;
     }
     showUploadStatus(
-      "Nao foi possivel reproduzir automaticamente. Tente novamente.",
+      "Não foi possível reproduzir automaticamente. Tente novamente.",
       true
     );
     showSetupScreen();
@@ -424,7 +423,7 @@ async function refreshHistory() {
     playHistoryList.innerHTML = "";
     const li = document.createElement("li");
     li.className = "history-empty";
-    li.textContent = "Historico indisponivel (migration pendente).";
+    li.textContent = "Histórico indisponível no momento.";
     playHistoryList.appendChild(li);
   }
 }
@@ -441,14 +440,14 @@ function handleTimerComplete() {
   pendingAutoRepeat = Boolean(timerAutoRepeat?.checked);
 
   if (timerNotify?.checked) {
-    notifyTimerEnded("Nostrabot", "Timer terminou — sorteando audio.");
+    notifyTimerEnded("Nostrabot", "O timer terminou — sorteando um áudio.");
   }
 
   const chosen = drawWeightedRecord(cachedRecords, audioWeights, {
     noRepeatUntilAll: Boolean(timerNoRepeat?.checked)
   });
   if (!chosen) {
-    timerStateLabel.textContent = "Sem audios para tocar";
+    timerStateLabel.textContent = "Sem áudios para tocar";
     isTimerRunning = false;
     releaseWakeLock();
     updateUiLock();
@@ -635,7 +634,7 @@ function createProgressRow(label) {
 async function uploadMany(files) {
   const list = Array.from(files || []);
   if (!list.length) {
-    showUploadStatus("Escolha ao menos um arquivo de audio.", true);
+    showUploadStatus("Escolha ao menos um arquivo de áudio.", true);
     return;
   }
 
@@ -708,7 +707,7 @@ function buildAudioItem(record) {
   const date = document.createElement("span");
   date.className = "audio-meta-item";
   date.textContent = showingTrash
-    ? `Excluido em ${formatDate(record.deletedAt)}`
+    ? `Excluído em ${formatDate(record.deletedAt)}`
     : `Salvo em ${formatDate(record.uploadedAt)}`;
   meta.append(size, date);
 
@@ -733,7 +732,7 @@ function buildAudioItem(record) {
       restoreButton.disabled = true;
       try {
         await restoreAudioRecord(record.id);
-        showUploadStatus("Audio restaurado.");
+        showUploadStatus("Áudio restaurado.");
         await refreshList();
       } catch (error) {
         showUploadStatus(error.message || "Erro ao restaurar.", true);
@@ -769,7 +768,7 @@ function buildAudioItem(record) {
             try {
               await restoreAudioRecord(record.id);
               await refreshList();
-              showUploadStatus("Exclusao desfeita.");
+              showUploadStatus("Exclusão desfeita.");
             } catch (error) {
               showUploadStatus(error.message || "Falha ao desfazer.", true);
             }
@@ -777,7 +776,7 @@ function buildAudioItem(record) {
         });
         await refreshList();
       } catch (error) {
-        showUploadStatus(error.message || "Erro ao excluir audio.", true);
+        showUploadStatus(error.message || "Erro ao excluir áudio.", true);
         deleteButton.disabled = false;
       }
     });
@@ -798,8 +797,8 @@ async function refreshList() {
     schemaMissing = false;
     if (listHint) {
       listHint.textContent = showingTrash
-        ? "Itens na lixeira podem ser restaurados por ate 30 dias."
-        : "Peso no banco controla a chance no timer. Itens excluidos ficam 30 dias na lixeira.";
+        ? "Itens na lixeira podem ser restaurados por até 30 dias."
+        : "O peso define a chance no sorteio. Itens excluídos ficam 30 dias na lixeira.";
     }
 
     records.sort((a, b) => {
@@ -826,9 +825,8 @@ async function refreshList() {
     }
 
     audioList.innerHTML = "";
-    const label = showingTrash ? "Lixeira" : "Audios salvos";
     if (audioDropdownSummary) {
-      audioDropdownSummary.textContent = `${label} (${records.length})`;
+      audioDropdownSummary.textContent = String(records.length);
     }
 
     if (records.length === 0) {
@@ -836,7 +834,7 @@ async function refreshList() {
       empty.className = "audio-item audio-item--empty";
       empty.textContent = showingTrash
         ? "Lixeira vazia."
-        : "Nenhum audio salvo ainda.";
+        : "Nenhum áudio ainda.";
       audioList.appendChild(empty);
       updateUiLock();
       return;
@@ -852,9 +850,9 @@ async function refreshList() {
       const empty = document.createElement("li");
       empty.className = "audio-item audio-item--empty";
       empty.textContent =
-        "Supabase ainda sem migrations. Aplique os SQL em supabase/migrations/ e recarregue.";
+        "A biblioteca ainda não está pronta. Peça ao administrador para concluir a configuração.";
       audioList.appendChild(empty);
-      if (audioDropdownSummary) audioDropdownSummary.textContent = "Audios salvos (0)";
+      if (audioDropdownSummary) audioDropdownSummary.textContent = "0";
       showUploadStatus(error.message, true);
       return;
     }
@@ -867,14 +865,14 @@ async function startRandomTimer() {
   const min = Number(timerAmountMinInput?.value);
   const max = Number(timerAmountMaxInput?.value);
   if (!Number.isFinite(min) || min <= 0 || !Number.isFinite(max) || max <= 0) {
-    showSetupFeedback("Informe um intervalo valido (min/max).");
+    showSetupFeedback("Informe um intervalo válido (mín/máx).");
     return;
   }
   if (!cachedRecords.length) {
     showSetupFeedback(
       schemaMissing
-        ? "Aplique as migrations do Supabase antes."
-        : "Nenhum audio salvo."
+        ? "A biblioteca ainda não está pronta."
+        : "Nenhum áudio salvo."
     );
     return;
   }
@@ -1033,24 +1031,6 @@ async function init() {
       });
     }
 
-    if (migrateBlobButton) {
-      migrateBlobButton.addEventListener("click", async () => {
-        migrateBlobButton.disabled = true;
-        showUploadStatus("Migrando audios do Vercel Blob...");
-        try {
-          const result = await runBlobMigration();
-          showUploadStatus(
-            `Migracao: ${result.migrated} ok, ${result.skipped} ignorados, ${result.errors} erros.`
-          );
-          showingTrash = false;
-          await refreshList();
-        } catch (error) {
-          showUploadStatus(error.message || "Falha na migracao.", true);
-        } finally {
-          migrateBlobButton.disabled = false;
-        }
-      });
-    }
 
     const recorder = createMicRecorder({
       onStop: (file) => {
@@ -1072,11 +1052,11 @@ async function init() {
             return;
           }
           await recorder.start();
-          recordButton.textContent = "Parar gravacao";
+          recordButton.textContent = "Parar gravação";
           showUploadStatus("Gravando do microfone...");
         } catch (error) {
           showUploadStatus(
-            error?.message || "Permissao de microfone negada.",
+            error?.message || "Permissão de microfone negada.",
             true
           );
         }
@@ -1133,7 +1113,7 @@ async function init() {
       try {
         await joinRoom(initialRoom);
       } catch (error) {
-        showUploadStatus(error.message || "Nao foi possivel entrar na sala.", true);
+        showUploadStatus(error.message || "Não foi possível entrar na sala.", true);
       }
     }
 
@@ -1143,7 +1123,7 @@ async function init() {
   } catch (error) {
     console.error(error);
     showUploadStatus(
-      error?.message || "Erro ao carregar a lista de audios. Recarregue a pagina.",
+      error?.message || "Erro ao carregar a lista de áudios. Recarregue a página.",
       true
     );
   }
