@@ -6,7 +6,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test test/"
+    "test": "node --test test/admin-auth.test.js test/blob-helpers.test.js"
   },
   "dependencies": {
     "@vercel/blob": "^2.3.1"
