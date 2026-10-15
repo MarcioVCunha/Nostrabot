@@ -79,39 +79,78 @@
         </section>
 
         <section class="card">
-          <h2>3) Timer com reproducao ponderada</h2>
+          <h2>3) Timer com sorteio ponderado</h2>
           <p class="hint">
-            Quando o timer terminar, um audio sera escolhido com peso: quanto
-            mais tempo sem tocar, maior a chance.
+            Contagem grande, pausa, repeticao automatica e intervalo aleatorio
+            entre minimo e maximo.
           </p>
 
           <div class="row">
-            <input
-              id="timerAmount"
-              type="number"
-              min="1"
-              placeholder="Tempo"
-              aria-label="Quantidade de tempo"
-            />
+            <label class="field">
+              <span>Min</span>
+              <input
+                id="timerAmountMin"
+                type="number"
+                min="1"
+                value="30"
+                aria-label="Tempo minimo"
+              />
+            </label>
+            <label class="field">
+              <span>Max</span>
+              <input
+                id="timerAmountMax"
+                type="number"
+                min="1"
+                value="60"
+                aria-label="Tempo maximo"
+              />
+            </label>
             <select id="timerUnit" aria-label="Unidade de tempo">
               <option value="seconds">Segundos</option>
               <option value="minutes">Minutos</option>
             </select>
             <button id="startRandomTimerButton" type="button">Iniciar timer</button>
           </div>
+
+          <div class="row timer-options">
+            <label class="check">
+              <input id="timerAutoRepeat" type="checkbox" />
+              Repetir automaticamente
+            </label>
+            <label class="check">
+              <input id="timerNoRepeat" type="checkbox" />
+              Sem repetir ate tocar todos
+            </label>
+            <label class="check">
+              <input id="timerNotify" type="checkbox" checked />
+              Notificar ao terminar
+            </label>
+          </div>
           <p id="timerSetupStatus" class="status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="card">
+          <h2>4) Historico de toques</h2>
+          <p class="hint">Ultimos audios sorteados (local / sala).</p>
+          <ul id="playHistoryList" class="history-list"></ul>
         </section>
       </div>
 
       <div id="timerScreen" class="timer-screen" hidden>
-        <button
-          id="cancelRandomTimerButton"
-          class="secondary"
-          type="button"
-          disabled
-        >
-          Cancelar
-        </button>
+        <div class="timer-screen-actions">
+          <button id="pauseResumeTimerButton" class="secondary" type="button">
+            Pausar
+          </button>
+          <button
+            id="cancelRandomTimerButton"
+            class="secondary"
+            type="button"
+            disabled
+          >
+            Cancelar
+          </button>
+        </div>
 
         <div class="timer-widget timer-widget--fullscreen">
           <svg
@@ -132,7 +171,9 @@
             ></circle>
           </svg>
           <div class="timer-center">
-            <div id="timeRemainingLabel" class="time-remaining">--:--</div>
+            <div id="timeRemainingLabel" class="time-remaining time-remaining--xl">
+              --:--
+            </div>
             <div id="timerStateLabel" class="time-caption">Aguardando</div>
           </div>
         </div>
@@ -149,7 +190,7 @@
 
       <footer class="page-footer">
         <a class="footer-link" href="./patch">Novidades</a>
-        <span class="footer-version">v1.3.0</span>
+        <span class="footer-version">v1.4.0</span>
       </footer>
     </main>
 

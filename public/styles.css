@@ -623,3 +623,61 @@ button:disabled {
   flex-shrink: 0;
   padding: 6px 10px;
 }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--hint);
+}
+
+.field input {
+  min-width: 88px;
+}
+
+.timer-options {
+  margin-top: 12px;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--subtitle);
+  font-size: 0.92rem;
+}
+
+.timer-screen-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.time-remaining--xl {
+  font-size: min(12vmin, 96px) !important;
+  letter-spacing: 0.04em;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.history-list li {
+  padding: 10px 12px;
+  border: 1px solid var(--audio-item-border);
+  border-radius: 10px;
+  background: var(--audio-item-bg);
+  color: var(--subtitle);
+  font-size: 0.92rem;
+}
+
+.history-empty {
+  text-align: center;
+  color: var(--hint);
+}
