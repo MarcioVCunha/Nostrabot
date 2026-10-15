@@ -2,7 +2,8 @@ const {
   createRoom,
   getRoom,
   setRoomState,
-  startRoomTimer
+  startRoomTimer,
+  cancelRoomTimer
 } = require("../lib/rooms-store");
 const {
   sendJson,
@@ -11,6 +12,11 @@ const {
 } = require("../lib/json-blob");
 
 module.exports = async function handler(req, res) {
+  // Belt-and-suspenders: never let intermediaries cache room polls.
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+
   if (!requireBlobToken(res)) return;
 
   try {
@@ -41,7 +47,18 @@ module.exports = async function handler(req, res) {
       if (action === "start") {
         const code = String(body.code || "");
         if (!code) return sendJson(res, 400, { error: "code obrigatorio." });
-        const room = await startRoomTimer(code, body.durationMs);
+        const room = await startRoomTimer(code, {
+          durationMs: body.durationMs,
+          autoRepeat: body.autoRepeat,
+          noRepeatUntilAll: body.noRepeatUntilAll
+        });
+        return sendJson(res, 200, { room });
+      }
+
+      if (action === "cancel") {
+        const code = String(body.code || "");
+        if (!code) return sendJson(res, 400, { error: "code obrigatorio." });
+        const room = await cancelRoomTimer(code);
         return sendJson(res, 200, { room });
       }
 

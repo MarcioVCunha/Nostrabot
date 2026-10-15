@@ -26,16 +26,22 @@ export function serverNowMs() {
   return Date.now() + clockOffsetMs;
 }
 
-export async function syncServerClock() {
-  try {
-    const response = await fetch("/api/rooms");
-    const data = await response.json().catch(() => ({}));
-    if (data.server_now) applyServerNow(data.server_now);
-    return clockOffsetMs;
-  } catch (error) {
-    console.warn(error);
-    return 0;
-  }
+export function getClockOffsetMs() {
+  return clockOffsetMs;
+}
+
+function noStoreFetch(url, options = {}) {
+  const bust = new URL(url, window.location.origin);
+  bust.searchParams.set("_ts", String(Date.now()));
+  return fetch(bust.toString(), {
+    ...options,
+    cache: "no-store",
+    headers: {
+      ...(options.headers || {}),
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache"
+    }
+  });
 }
 
 async function readRoomError(response, fallback) {
@@ -43,8 +49,20 @@ async function readRoomError(response, fallback) {
   return friendlyUserError(data.error || fallback, fallback);
 }
 
+export async function syncServerClock() {
+  try {
+    const response = await noStoreFetch("/api/rooms");
+    const data = await response.json().catch(() => ({}));
+    if (data.server_now) applyServerNow(data.server_now);
+    return clockOffsetMs;
+  } catch (error) {
+    console.warn(error);
+    return clockOffsetMs;
+  }
+}
+
 export async function createRoom(name = "Sala Nostrabot") {
-  const response = await fetch("/api/rooms", {
+  const response = await noStoreFetch("/api/rooms", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "create", name })
@@ -58,7 +76,7 @@ export async function createRoom(name = "Sala Nostrabot") {
 }
 
 export async function getRoom(code) {
-  const response = await fetch(
+  const response = await noStoreFetch(
     `/api/rooms?code=${encodeURIComponent(String(code || "").toUpperCase())}`
   );
   if (!response.ok) {
@@ -69,14 +87,16 @@ export async function getRoom(code) {
   return data.room;
 }
 
-export async function startRoomTimer(code, durationMs) {
-  const response = await fetch("/api/rooms", {
+export async function startRoomTimer(code, durationMs, options = {}) {
+  const response = await noStoreFetch("/api/rooms", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "start",
       code,
-      durationMs: Math.round(durationMs)
+      durationMs: Math.round(durationMs),
+      autoRepeat: Boolean(options.autoRepeat),
+      noRepeatUntilAll: Boolean(options.noRepeatUntilAll)
     })
   });
   if (!response.ok) {
@@ -90,7 +110,7 @@ export async function startRoomTimer(code, durationMs) {
 }
 
 export async function setRoomState(code, state) {
-  const response = await fetch("/api/rooms", {
+  const response = await noStoreFetch("/api/rooms", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "state", code, state })
@@ -103,8 +123,22 @@ export async function setRoomState(code, state) {
   return data.room;
 }
 
+export async function cancelRoomTimer(code) {
+  const response = await noStoreFetch("/api/rooms", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "cancel", code })
+  });
+  if (!response.ok) {
+    throw new Error(await readRoomError(response, "Falha ao cancelar sala."));
+  }
+  const data = await response.json();
+  if (data.room?.server_now) applyServerNow(data.room.server_now);
+  return data.room;
+}
+
 /**
- * Poll room state about once per second (replaces Realtime).
+ * Poll room state ~1s. Applies only higher revisions. Pauses while tab hidden.
  * @param {string} code
  * @param {(room: object) => void} onChange
  * @returns {() => void} unsubscribe
@@ -112,31 +146,67 @@ export async function setRoomState(code, state) {
 export function subscribeRoom(code, onChange) {
   let stopped = false;
   let timer = null;
-  let lastUpdated = null;
+  let lastRevision = -1;
+  let hidden = typeof document !== "undefined" && document.hidden;
+
+  const clearTimer = () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  };
+
+  const schedule = (ms = 1000) => {
+    clearTimer();
+    if (stopped || hidden) return;
+    timer = setTimeout(tick, ms);
+  };
 
   const tick = async () => {
-    if (stopped) return;
+    if (stopped || hidden) return;
     try {
       const room = await getRoom(code);
-      if (stopped || !room) return;
-      const stamp = room.updated_at || room.server_now;
-      if (stamp !== lastUpdated) {
-        lastUpdated = stamp;
+      if (stopped || hidden || !room) return;
+      // Clock offset from every poll
+      if (room.server_now) applyServerNow(room.server_now);
+
+      const revision = Number(room.state?.revision);
+      const rev = Number.isFinite(revision) ? revision : -1;
+      if (rev > lastRevision) {
+        lastRevision = rev;
         if (typeof onChange === "function") onChange(room);
-      } else if (room.server_now) {
-        applyServerNow(room.server_now);
+      } else if (typeof onChange === "function") {
+        // Still notify for clock-driven UI (endsAt countdown) with same revision
+        onChange({ ...room, _pollTick: true, _sameRevision: true });
       }
     } catch (error) {
       console.warn("Falha ao sincronizar sala:", error);
     } finally {
-      if (!stopped) timer = setTimeout(tick, 1000);
+      if (!stopped && !hidden) schedule(1000);
     }
   };
+
+  const onVisibility = () => {
+    hidden = document.hidden;
+    if (hidden) {
+      clearTimer();
+      return;
+    }
+    // Resume immediately when tab becomes visible
+    tick();
+  };
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", onVisibility);
+  }
 
   tick();
 
   return () => {
     stopped = true;
-    if (timer) clearTimeout(timer);
+    clearTimer();
+    if (typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", onVisibility);
+    }
   };
 }

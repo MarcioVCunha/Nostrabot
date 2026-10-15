@@ -30,6 +30,7 @@ describe("writeJsonBlob always allowOverwrite", () => {
       await writeJsonBlob("rooms/ABCD.json", { code: "ABCD", state: {} });
       assert.equal(seen.allowOverwrite, true);
       assert.equal(seen.addRandomSuffix, false);
+      assert.equal(seen.cacheControlMaxAge, 0);
 
       await writeJsonBlob(
         "data/audios-index.json",
@@ -38,6 +39,7 @@ describe("writeJsonBlob always allowOverwrite", () => {
       );
       assert.equal(seen.allowOverwrite, true);
       assert.equal(seen.addRandomSuffix, false);
+      assert.equal(seen.cacheControlMaxAge, 0);
       assert.equal(seen.ifMatch, '"etag-1"');
     } finally {
       Module._load = originalLoad;
