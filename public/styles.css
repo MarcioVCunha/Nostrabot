@@ -602,6 +602,15 @@ button:disabled {
   border-color: color-mix(in srgb, var(--status) 55%, var(--card-border));
 }
 
+.sound-unlock-row {
+  margin-top: 0.5rem;
+}
+
+.sound-status {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+}
+
 .room-status {
   font-weight: 700;
   color: var(--status);

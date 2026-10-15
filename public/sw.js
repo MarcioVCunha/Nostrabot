@@ -1,4 +1,4 @@
-const CACHE = "nostrabot-shell-v1.8";
+const CACHE = "nostrabot-shell-v1.8.1";
 const SHELL = [
   "./",
   "./index.html",
