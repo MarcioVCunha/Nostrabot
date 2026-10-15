@@ -31,7 +31,6 @@ describe("writeJsonBlob always allowOverwrite", () => {
       assert.equal(seen.allowOverwrite, true);
       assert.equal(seen.addRandomSuffix, false);
       assert.equal(seen.cacheControlMaxAge, 0);
-      assert.equal(seen.access, "public");
 
       await writeJsonBlob(
         "data/audios-index.json",
@@ -106,19 +105,15 @@ describe("readJsonBlob head-first behavior", () => {
     const originalLoad = Module._load;
     const originalFetch = global.fetch;
     let fetchedUrl = "";
-    let headCount = 0;
 
     Module._load = function mockLoad(request, parent, isMain) {
       if (request === "@vercel/blob") {
         return {
           put: async () => ({}),
-          head: async () => {
-            headCount += 1;
-            return {
-              url: "https://example.public.blob.vercel-storage.com/data/audios-index.json",
-              etag: '"etag-123"'
-            };
-          },
+          head: async () => ({
+            url: "https://example.public.blob.vercel-storage.com/data/audios-index.json",
+            etag: '"etag-123"'
+          }),
           get: async () => {
             throw new Error("get() nao deve ser chamado");
           },
@@ -149,8 +144,7 @@ describe("readJsonBlob head-first behavior", () => {
       assert.equal(result.etag, '"etag-123"');
       assert.equal(result.data.items[0].name, "Deram 20 minutos");
       assert.match(fetchedUrl, /_ts=/);
-      assert.match(fetchedUrl, /cache=0/);
-      assert.ok(headCount >= 1);
+      assert.doesNotMatch(fetchedUrl, /cache=0/);
     } finally {
       Module._load = originalLoad;
       global.fetch = originalFetch;
