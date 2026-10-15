@@ -6,6 +6,49 @@ const Module = require("module");
  * Reproduz o bug: get() 403 + head not-found deve virar fallback,
  * nao relancar o 403 original.
  */
+describe("writeJsonBlob create-only vs conditional overwrite", () => {
+  it("sem ifMatch nao passa allowOverwrite (evita clobber)", async () => {
+    const Module = require("module");
+    const originalLoad = Module._load;
+    let seen = null;
+
+    Module._load = function mockLoad(request, parent, isMain) {
+      if (request === "@vercel/blob") {
+        return {
+          put: async (_pathname, _body, options) => {
+            seen = options;
+            return { url: "https://x/data.json" };
+          },
+          head: async () => {
+            throw Object.assign(new Error("not found"), { status: 404 });
+          },
+          BlobNotFoundError: class BlobNotFoundError extends Error {}
+        };
+      }
+      return originalLoad(request, parent, isMain);
+    };
+
+    try {
+      delete require.cache[require.resolve("../lib/json-blob.js")];
+      const { writeJsonBlob } = require("../lib/json-blob.js");
+      await writeJsonBlob("data/audios-index.json", { version: 1, items: [] });
+      assert.equal(seen.allowOverwrite, undefined);
+      assert.equal(seen.ifMatch, undefined);
+
+      await writeJsonBlob(
+        "data/audios-index.json",
+        { version: 1, items: [{ id: "1" }] },
+        { ifMatch: '"etag-1"' }
+      );
+      assert.equal(seen.allowOverwrite, true);
+      assert.equal(seen.ifMatch, '"etag-1"');
+    } finally {
+      Module._load = originalLoad;
+      delete require.cache[require.resolve("../lib/json-blob.js")];
+    }
+  });
+});
+
 describe("readJsonBlob head-first behavior", () => {
   it("nao usa get(); head 404 retorna fallback sem 403", async () => {
     const originalLoad = Module._load;
