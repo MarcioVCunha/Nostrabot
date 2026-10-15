@@ -3,7 +3,6 @@ import {
   deleteAudioRecord,
   getAllAudioRecords,
   restoreAudioRecord,
-  SchemaMissingError,
   uploadAudioFile
 } from "./api.js";
 import { drawWeightedRecord } from "./draw.js";
@@ -25,6 +24,7 @@ import {
   subscribeRoom,
   syncServerClock
 } from "./rooms.js";
+import { initPrankAd } from "./prank-ad.js";
 import { initThemeToggle } from "./theme.js";
 import { showToast } from "./toast.js";
 import {
@@ -80,7 +80,6 @@ let wakeLock = null;
 let pendingPlay = null;
 let showingTrash = false;
 let searchQuery = "";
-let schemaMissing = false;
 let pendingAutoRepeat = false;
 let currentRoomCode = null;
 let unsubRoom = null;
@@ -239,6 +238,7 @@ function clearActiveTimerStorage() {
 }
 
 initThemeToggle(themeToggle);
+initPrankAd();
 
 window.addEventListener("beforeunload", (event) => {
   if (!isTimerRunning && !activeCountdown) return;
@@ -794,7 +794,6 @@ async function refreshList() {
       query: searchQuery,
       trashed: showingTrash
     });
-    schemaMissing = false;
     if (listHint) {
       listHint.textContent = showingTrash
         ? "Itens na lixeira podem ser restaurados por até 30 dias."
@@ -843,20 +842,14 @@ async function refreshList() {
     records.forEach((record) => audioList.appendChild(buildAudioItem(record)));
     updateUiLock();
   } catch (error) {
-    if (error instanceof SchemaMissingError || error.schemaMissing) {
-      schemaMissing = true;
-      cachedRecords = [];
-      audioList.innerHTML = "";
-      const empty = document.createElement("li");
-      empty.className = "audio-item audio-item--empty";
-      empty.textContent =
-        "A biblioteca ainda não está pronta. Peça ao administrador para concluir a configuração.";
-      audioList.appendChild(empty);
-      if (audioDropdownSummary) audioDropdownSummary.textContent = "0";
-      showUploadStatus(error.message, true);
-      return;
-    }
-    throw error;
+    cachedRecords = [];
+    audioList.innerHTML = "";
+    const empty = document.createElement("li");
+    empty.className = "audio-item audio-item--empty";
+    empty.textContent = "Não foi possível carregar a biblioteca.";
+    audioList.appendChild(empty);
+    if (audioDropdownSummary) audioDropdownSummary.textContent = "0";
+    showUploadStatus(error.message || "Erro ao listar áudios.", true);
   }
 }
 
@@ -869,11 +862,7 @@ async function startRandomTimer() {
     return;
   }
   if (!cachedRecords.length) {
-    showSetupFeedback(
-      schemaMissing
-        ? "A biblioteca ainda não está pronta."
-        : "Nenhum áudio salvo."
-    );
+    showSetupFeedback("Nenhum áudio salvo.");
     return;
   }
   const unit = timerUnitSelect.value;

@@ -1,15 +1,15 @@
 {
   "name": "audio-timer-vercel",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "private": true,
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test test/admin-auth.test.js test/admin-hash.test.js test/draw.test.js"
+    "test": "node --test test/admin-auth.test.js test/blob-helpers.test.js test/draw.test.js"
   },
   "type": "commonjs",
   "dependencies": {
-    "@supabase/supabase-js": "^2.58.0"
+    "@vercel/blob": "^2.3.1"
   }
 }
