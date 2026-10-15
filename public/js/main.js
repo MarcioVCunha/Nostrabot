@@ -1284,6 +1284,7 @@ async function init() {
           currentRoomCode = room.code;
           latestRoomState = room.state || null;
           playedRevision = -1;
+          noteRoomRevision(room.code, room.state?.revision);
           setRoomInLocation(room.code);
           updateRoomUi();
           if (unsubRoom) unsubRoom();
