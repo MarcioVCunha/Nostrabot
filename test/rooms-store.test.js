@@ -18,7 +18,13 @@ function installBlobMemory() {
       }
       const etag = `"e${etagSeq++}"`;
       const url = `https://blob.test/${pathname}`;
-      store.set(pathname, { body: String(body), etag, url });
+      store.set(pathname, {
+        body: String(body),
+        etag,
+        url,
+        pathname,
+        uploadedAt: new Date(Date.now() + etagSeq * 10).toISOString()
+      });
       return { url, pathname, etag };
     },
     head: async (pathname) => {
@@ -30,7 +36,25 @@ function installBlobMemory() {
       }
       return { url: row.url, etag: row.etag, pathname };
     },
-    get: async (pathname, options = {}) => {
+    list: async ({ prefix } = {}) => {
+      const blobs = [];
+      for (const [pathname, row] of store.entries()) {
+        if (prefix && !pathname.startsWith(prefix) && pathname !== prefix) continue;
+        blobs.push({
+          pathname,
+          url: row.url,
+          etag: row.etag,
+          uploadedAt: row.uploadedAt
+        });
+      }
+      return { blobs };
+    },
+    del: async (url) => {
+      for (const [pathname, row] of store.entries()) {
+        if (row.url === url || pathname === url) store.delete(pathname);
+      }
+    },
+    get: async (pathname) => {
       const row = store.get(pathname);
       if (!row) return null;
       const encoded = new TextEncoder().encode(row.body);
@@ -76,6 +100,7 @@ function installBlobMemory() {
       for (const key of Object.keys(require.cache)) {
         if (
           key.includes("/lib/json-blob.js") ||
+          key.includes("/lib/room-blob.js") ||
           key.includes("/lib/rooms-store.js") ||
           key.includes("/lib/audio-index.js") ||
           key.includes("/lib/draw.js") ||
