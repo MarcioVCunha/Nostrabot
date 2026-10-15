@@ -681,3 +681,8 @@ button:disabled {
   text-align: center;
   color: var(--hint);
 }
+
+.room-status {
+  font-weight: 700;
+  color: var(--status);
+}
