@@ -37,10 +37,10 @@ describe("writeJsonBlob always allowOverwrite", () => {
         { version: 1, items: [] },
         { ifMatch: '"etag-1"' }
       );
-      assert.equal(seen.allowOverwrite, true);
+      assert.equal(seen.ifMatch, '"etag-1"');
+      assert.equal(seen.allowOverwrite, undefined);
       assert.equal(seen.addRandomSuffix, false);
       assert.equal(seen.cacheControlMaxAge, 0);
-      assert.equal(seen.ifMatch, '"etag-1"');
     } finally {
       Module._load = originalLoad;
       delete require.cache[require.resolve("../lib/json-blob.js")];
