@@ -156,6 +156,23 @@ describe("rooms-store server-side draw", () => {
     assert.equal(again.state.endsAt, results[0].state.endsAt);
   });
 
+  it("start tardio com endsAt ainda no futuro nao redesenha", async () => {
+    const created = await roomsStore.createRoom("Late");
+    const first = await roomsStore.startRoomTimer(created.code, {
+      durationMs: 2500,
+      autoRepeat: true
+    });
+    // Simulate a slow second client arriving ~1.7s later (still before endsAt).
+    await new Promise((r) => setTimeout(r, 50));
+    const second = await roomsStore.startRoomTimer(created.code, {
+      durationMs: 2500,
+      autoRepeat: true
+    });
+    assert.equal(second.state.drawnAudioId, first.state.drawnAudioId);
+    assert.equal(second.state.endsAt, first.state.endsAt);
+    assert.equal(second.state.revision, first.state.revision);
+  });
+
   it("auto-repeat promove nextDrawnAudioId no ciclo seguinte", async () => {
     const created = await roomsStore.createRoom("Repeat");
     const first = await roomsStore.startRoomTimer(created.code, {
