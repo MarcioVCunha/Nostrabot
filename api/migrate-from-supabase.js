@@ -1,4 +1,4 @@
-const { put } = require("@vercel/blob");
+const { put, head } = require("@vercel/blob");
 const { checkAdminKey } = require("../lib/admin-auth");
 const {
   findBySourceId,
@@ -11,7 +11,26 @@ const {
   extensionFromContentType,
   newId
 } = require("../lib/blob-helpers");
-const { sendJson, requireBlobToken } = require("../lib/json-blob");
+const { sendJson, requireBlobToken, isNotFound } = require("../lib/json-blob");
+
+async function blobExists(pathnameOrUrl) {
+  if (!pathnameOrUrl) return false;
+  try {
+    await head(pathnameOrUrl);
+    return true;
+  } catch (error) {
+    if (isNotFound(error)) return false;
+    // Fallback: public GET
+    try {
+      const res = await fetch(pathnameOrUrl, { method: "HEAD" });
+      if (res.ok) return true;
+      if (res.status === 404) return false;
+    } catch (inner) {
+      // ignore
+    }
+    return false;
+  }
+}
 
 const SUPABASE_URL = "https://slkztbeihpesepamjcbo.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -66,14 +85,18 @@ module.exports = async function handler(req, res) {
 
       try {
         const existing = await findBySourceId(sourceId);
-        if (existing?.pathname) writtenPathnames.add(existing.pathname);
         if (existing) {
-          entry.status = "skipped";
-          entry.id = existing.id;
-          entry.url = existing.url;
-          entry.pathname = existing.pathname;
-          results.push(entry);
-          continue;
+          const alive = await blobExists(existing.pathname || existing.url);
+          if (alive) {
+            if (existing.pathname) writtenPathnames.add(existing.pathname);
+            entry.status = "skipped";
+            entry.id = existing.id;
+            entry.url = existing.url;
+            entry.pathname = existing.pathname;
+            results.push(entry);
+            continue;
+          }
+          entry.repaired = true;
         }
 
         const storagePath = String(row.storage_path || "");
@@ -95,7 +118,7 @@ module.exports = async function handler(req, res) {
           row.content_type ||
           "audio/webm";
         const buffer = Buffer.from(await fileRes.arrayBuffer());
-        const id = newId();
+        const id = existing?.id || newId();
         const pathname = buildAudioPathname(
           id,
           contentType,
@@ -120,12 +143,12 @@ module.exports = async function handler(req, res) {
           pathname: blob.pathname,
           contentType,
           size: row.size_bytes || buffer.length,
-          uploadedAt: row.created_at || new Date().toISOString(),
+          uploadedAt: row.created_at || existing?.uploadedAt || new Date().toISOString(),
           deletedAt: row.deleted_at || null,
           sourceId
         });
 
-        entry.status = "migrated";
+        entry.status = entry.repaired ? "repaired" : "migrated";
         entry.id = id;
         entry.url = blob.url;
         entry.pathname = blob.pathname;
@@ -160,6 +183,7 @@ module.exports = async function handler(req, res) {
     return sendJson(res, 200, {
       total: rows.length,
       migrated: results.filter((r) => r.status === "migrated").length,
+      repaired: results.filter((r) => r.status === "repaired").length,
       skipped: results.filter((r) => r.status === "skipped").length,
       errors: results.filter((r) => r.status === "error").length,
       indexCount: (finalIndex.items || []).filter((i) => !i.deletedAt).length,
