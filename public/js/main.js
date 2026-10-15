@@ -23,6 +23,7 @@ import {
   setRoomState,
   startRoomTimer,
   subscribeRoom,
+  noteRoomRevision,
   syncServerClock
 } from "./rooms.js";
 import { friendlyUserError } from "./errors.js";
@@ -562,6 +563,7 @@ async function maybeStartRoomRepeat() {
       )
     });
     latestRoomState = room.state || latestRoomState;
+    noteRoomRevision(currentRoomCode, room.state?.revision);
     const endAt = new Date(room.state.endsAt).getTime();
     const duration = Number(room.state.durationMs) || durationMs;
     startCountdown(duration, { endAt, durationMs: duration });
@@ -789,6 +791,7 @@ async function joinRoom(code) {
   currentRoomCode = room.code;
   latestRoomState = room.state || null;
   playedRevision = -1;
+  noteRoomRevision(room.code, room.state?.revision);
   setRoomInLocation(room.code);
   updateRoomUi();
   if (unsubRoom) unsubRoom();
@@ -1081,6 +1084,7 @@ async function startRandomTimer() {
     });
     latestRoomState = room.state || null;
     playedRevision = -1;
+    noteRoomRevision(currentRoomCode, room.state?.revision);
     const endAt = new Date(room.state.endsAt).getTime();
     const dur = Number(room.state.durationMs) || durationMs;
     startCountdown(dur, { endAt, durationMs: dur });

@@ -137,6 +137,17 @@ export async function cancelRoomTimer(code) {
   return data.room;
 }
 
+/** Floor so POST start/cancel responses are not overwritten by stale lower polls. */
+const revisionFloorByCode = new Map();
+
+export function noteRoomRevision(code, revision) {
+  const normalized = String(code || "").trim().toUpperCase();
+  const rev = Number(revision);
+  if (!normalized || !Number.isFinite(rev)) return;
+  const prev = revisionFloorByCode.get(normalized) ?? -1;
+  if (rev > prev) revisionFloorByCode.set(normalized, rev);
+}
+
 /**
  * Poll room state ~1s. Applies only higher revisions. Pauses while tab hidden.
  * @param {string} code
@@ -148,6 +159,7 @@ export function subscribeRoom(code, onChange) {
   let timer = null;
   let lastRevision = -1;
   let hidden = typeof document !== "undefined" && document.hidden;
+  const normalized = String(code || "").trim().toUpperCase();
 
   const clearTimer = () => {
     if (timer) {
@@ -171,9 +183,12 @@ export function subscribeRoom(code, onChange) {
       if (room.server_now) applyServerNow(room.server_now);
 
       const revision = Number(room.state?.revision);
+      const floor = revisionFloorByCode.get(normalized) ?? -1;
       const rev = Number.isFinite(revision) ? revision : -1;
-      if (rev > lastRevision) {
+      const effectiveLast = Math.max(lastRevision, floor);
+      if (rev > effectiveLast) {
         lastRevision = rev;
+        noteRoomRevision(normalized, rev);
         if (typeof onChange === "function") onChange(room);
       } else if (typeof onChange === "function") {
         // Still notify for clock-driven UI (endsAt countdown) with same revision
