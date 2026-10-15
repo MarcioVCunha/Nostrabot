@@ -1,5 +1,5 @@
 /**
- * Converte/recomprime audio no cliente para audio/webm;codecs=opus.
+ * Recomprime áudio no cliente para um formato compacto.
  * Se falhar, devolve o arquivo original.
  */
 export async function compressAudioFile(file, onProgress) {
@@ -46,7 +46,7 @@ export async function compressAudioFile(file, onProgress) {
       lastModified: Date.now()
     });
   } catch (error) {
-    console.warn("Compressao falhou, enviando original:", error);
+    console.warn("Compressão falhou, enviando original:", error);
     if (typeof onProgress === "function") onProgress(1);
     return file;
   }

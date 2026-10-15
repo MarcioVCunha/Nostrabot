@@ -31,7 +31,7 @@ export function ensureAdminKey(options = {}) {
 
   const message = forcePrompt
     ? "Informe a nova chave de admin do Nostrabot:"
-    : "Informe a chave de admin para enviar ou excluir audios:";
+    : "Informe a chave de admin para enviar ou excluir áudios:";
 
   const value = window.prompt(message, current || "");
   if (value == null) return null;

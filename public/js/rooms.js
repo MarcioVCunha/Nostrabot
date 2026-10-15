@@ -45,7 +45,7 @@ export async function createRoom(name = "Sala Nostrabot") {
   });
   if (error) {
     if (isSchemaMissingError(error)) {
-      throw new Error("Salas indisponiveis: aplique a migration de rooms.");
+      throw new Error("Salas ainda indisponíveis. Tente mais tarde.");
     }
     throw new Error(error.message || "Falha ao criar sala.");
   }
@@ -59,9 +59,9 @@ export async function getRoom(code) {
   });
   if (error) {
     if (isSchemaMissingError(error)) {
-      throw new Error("Salas indisponiveis: aplique a migration de rooms.");
+      throw new Error("Salas ainda indisponíveis. Tente mais tarde.");
     }
-    throw new Error(error.message || "Sala nao encontrada.");
+    throw new Error(error.message || "Sala não encontrada.");
   }
   applyServerNow(data.server_now);
   return data;

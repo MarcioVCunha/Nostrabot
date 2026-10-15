@@ -11,7 +11,7 @@ export function applyTheme(theme, themeToggle) {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = theme === "dark" ? "#090612" : "#f3f0ea";
   if (!themeToggle) return;
-  themeToggle.textContent = theme === "dark" ? "Tema: Mistico" : "Tema: Claro";
+  themeToggle.textContent = theme === "dark" ? "Tema: Místico" : "Tema: Claro";
 }
 
 export function initThemeToggle(themeToggle) {

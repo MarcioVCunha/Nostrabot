@@ -19,17 +19,17 @@
       <div class="topbar">
         <h1>Novidades</h1>
         <button id="themeToggle" class="secondary" type="button">
-          Tema: Mistico
+          Tema: Místico
         </button>
       </div>
 
       <p class="subtitle">
-        Veja o que mudou no <strong>Nostrabot</strong> em cada atualizacao.
+        Veja o que mudou no <strong>Nostrabot</strong> em cada atualização.
       </p>
 
       <section class="card patch-card">
         <div class="patch-header">
-          <h2>v1.6.0</h2>
+          <h2>v1.7.0</h2>
           <span class="patch-badge">Atual</span>
         </div>
         <p class="hint patch-date">Outubro de 2026</p>
@@ -39,16 +39,45 @@
             <strong>Novidades</strong>
             <ul>
               <li>
-                <strong>Visual mistico</strong>
+                <strong>Layout em três painéis</strong>
+                <ul>
+                  <li>
+                    Biblioteca à esquerda, timer no centro e sala/histórico à
+                    direita — pensado para desktop, com ajuste no celular.
+                  </li>
+                  <li>
+                    Textos mais curtos e amigáveis, sem jargão técnico na
+                    interface.
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card patch-card">
+        <div class="patch-header">
+          <h2>v1.6.0</h2>
+        </div>
+        <p class="hint patch-date">Outubro de 2026</p>
+
+        <ul class="patch-tree">
+          <li>
+            <strong>Novidades</strong>
+            <ul>
+              <li>
+                <strong>Visual místico</strong>
                 <ul>
                   <li>
                     Tema escuro com atmosfera de noite e dourado, tipografia
-                    propria e fundo com brilho suave.
+                    própria e fundo com brilho suave.
                   </li>
                   <li>
-                    Novo icone e favicon em SVG (lua + anel), tambem no PWA.
+                    Novo ícone e favicon em SVG (lua + anel), também no app
+                    instalável.
                   </li>
-                  <li>Ainda da para alternar para o tema claro legivel.</li>
+                  <li>Ainda dá para alternar para o tema claro legível.</li>
                 </ul>
               </li>
             </ul>
@@ -67,16 +96,13 @@
             <strong>Novidades</strong>
             <ul>
               <li>
-                <strong>Salas e PWA</strong>
+                <strong>Salas e app instalável</strong>
                 <ul>
                   <li>
                     Crie uma sala, copie o link e sincronize o timer com os
-                    amigos (Realtime + relogio do servidor).
+                    amigos.
                   </li>
-                  <li>
-                    App instalavel no desktop (manifest + service worker com
-                    cache do shell).
-                  </li>
+                  <li>Dá para instalar o Nostrabot no desktop ou no celular.</li>
                 </ul>
               </li>
             </ul>
@@ -98,17 +124,17 @@
                 <strong>Timer e sorteio</strong>
                 <ul>
                   <li>Pausar e continuar a contagem.</li>
-                  <li>Intervalo aleatorio entre minimo e maximo.</li>
-                  <li>Repetir automaticamente apos tocar o audio.</li>
+                  <li>Intervalo aleatório entre mínimo e máximo.</li>
+                  <li>Repetir automaticamente após tocar o áudio.</li>
                   <li>
-                    Opcao de nao repetir o mesmo audio ate todos tocarem.
+                    Opção de não repetir o mesmo áudio até todos tocarem.
                   </li>
-                  <li>Contagem bem grande na tela cheia.</li>
+                  <li>Contagem bem grande na tela.</li>
                   <li>
-                    Notificacao do navegador quando o timer acaba (mesmo em
+                    Notificação do navegador quando o timer acaba (mesmo em
                     outra aba, se permitido).
                   </li>
-                  <li>Historico dos toques (audio + horario + sala).</li>
+                  <li>Histórico dos toques (áudio + horário).</li>
                 </ul>
               </li>
             </ul>
@@ -127,35 +153,20 @@
             <strong>Novidades</strong>
             <ul>
               <li>
-                <strong>Biblioteca no Supabase</strong>
+                <strong>Biblioteca de áudios</strong>
                 <ul>
                   <li>
-                    Audios passam a ficar no Storage publico
-                    <code>audios</code>, com nome, descricao e peso no banco.
+                    Áudios na nuvem com nome, descrição e peso para o sorteio.
                   </li>
                   <li>
-                    Busca na lista, arrastar-e-soltar com barra de progresso,
-                    gravacao pelo microfone e compressao para Opus/WebM.
+                    Busca na lista, arrastar-e-soltar com barra de progresso e
+                    gravação pelo microfone.
                   </li>
                   <li>
-                    Lixeira com exclusao suave, restaurar em ate 30 dias e
-                    toast de desfazer.
-                  </li>
-                  <li>
-                    Botao <strong>Migrar Blob</strong> para trazer os audios
-                    antigos do Vercel Blob (uma vez).
+                    Lixeira com exclusão suave, restaurar em até 30 dias e
+                    opção de desfazer.
                   </li>
                 </ul>
-              </li>
-            </ul>
-          </li>
-          <li>
-            <strong>Observacao</strong>
-            <ul>
-              <li>
-                E preciso aplicar o SQL em
-                <code>supabase/migrations/</code> e gravar o hash da chave
-                admin em <code>private.app_config</code>.
               </li>
             </ul>
           </li>
@@ -173,52 +184,42 @@
             <strong>Novidades</strong>
             <ul>
               <li>
-                <strong>Protecao de escrita</strong>
+                <strong>Proteção de escrita</strong>
                 <ul>
                   <li>
-                    Enviar e excluir audios agora pedem uma chave de admin
+                    Enviar e excluir áudios agora pedem uma chave de admin
                     (salva neste dispositivo).
                   </li>
                   <li>
-                    Botao <strong>Alterar chave</strong> para trocar a senha
-                    quando quiser.
+                    Botão <strong>Chave</strong> para trocar a senha quando
+                    quiser.
                   </li>
                 </ul>
               </li>
               <li>
                 <strong>Upload</strong>
                 <ul>
-                  <li>
-                    Arquivos sobem direto do celular/navegador para o Vercel
-                    Blob (mais leve no servidor).
-                  </li>
-                  <li>
-                    So aceita arquivos de audio (<code>audio/*</code>), ate
-                    25 MB cada.
-                  </li>
+                  <li>Arquivos sobem direto do celular ou do navegador.</li>
+                  <li>Só aceita arquivos de áudio, até 25 MB cada.</li>
                 </ul>
               </li>
               <li>
                 <strong>Mensagens e qualidade</strong>
                 <ul>
                   <li>
-                    Erros de listar, enviar ou excluir aparecem em portugues,
+                    Erros de listar, enviar ou excluir aparecem em português,
                     de forma clara.
-                  </li>
-                  <li>
-                    Codigo do app dividido em modulos e testes automaticos no
-                    GitHub.
                   </li>
                 </ul>
               </li>
             </ul>
           </li>
           <li>
-            <strong>Correcoes</strong>
+            <strong>Correções</strong>
             <ul>
               <li>
-                Sem a chave configurada no servidor, uploads e exclusoes ficam
-                bloqueados de proposito.
+                Sem a chave configurada no servidor, uploads e exclusões ficam
+                bloqueados de propósito.
               </li>
             </ul>
           </li>
@@ -236,22 +237,20 @@
             <strong>Novidades</strong>
             <ul>
               <li>
-                <strong>Peso nos audios</strong>
+                <strong>Peso nos áudios</strong>
                 <ul>
                   <li>
-                    Audios que ficam mais tempo sem tocar passam a ter mais
+                    Áudios que ficam mais tempo sem tocar passam a ter mais
                     chance quando o timer acaba.
                   </li>
                   <li>
-                    Cada audio mostra o peso na lista, para voce ver quem esta
+                    Cada áudio mostra o peso na lista, para você ver quem está
                     "com mais fome" de tocar.
                   </li>
+                  <li>Áudios novos entram já com boa chance de tocar logo.</li>
                   <li>
-                    Audios novos entram ja com boa chance de tocar logo.
-                  </li>
-                  <li>
-                    Usar <strong>Reproduzir agora</strong> nao altera as
-                    chances — so o timer muda os pesos.
+                    Usar <strong>Tocar</strong> não altera as chances — só o
+                    timer muda os pesos.
                   </li>
                 </ul>
               </li>
@@ -259,15 +258,15 @@
                 <strong>Timer</strong>
                 <ul>
                   <li>
-                    O ultimo tempo que voce configurou fica salvo para a proxima
-                    vez.
+                    O último tempo que você configurou fica salvo para a
+                    próxima vez.
                   </li>
                   <li>
-                    Se recarregar a pagina com o timer rodando, ele continua de
+                    Se recarregar a página com o timer rodando, ele continua de
                     onde parou.
                   </li>
                   <li>
-                    O app tenta manter a tela ligada enquanto o timer esta
+                    O app tenta manter a tela ligada enquanto o timer está
                     rodando.
                   </li>
                 </ul>
@@ -276,30 +275,26 @@
                 <strong>Interface</strong>
                 <ul>
                   <li>O app agora se chama <strong>Nostrabot</strong>.</li>
-                  <li>
-                    Tela do timer mais confortavel no modo escuro.
-                  </li>
-                  <li>
-                    Esta pagina de Novidades com o historico de versoes.
-                  </li>
+                  <li>Tela do timer mais confortável no modo escuro.</li>
+                  <li>Esta página de Novidades com o histórico de versões.</li>
                 </ul>
               </li>
               <li>
-                <strong>Upload e audios</strong>
+                <strong>Upload e áudios</strong>
                 <ul>
                   <li>
-                    Progresso ao enviar varios arquivos (ex.: "2 de 5").
+                    Progresso ao enviar vários arquivos (ex.: "2 de 5").
                   </li>
-                  <li>Confirmacao antes de excluir um audio.</li>
+                  <li>Confirmação antes de excluir um áudio.</li>
                 </ul>
               </li>
             </ul>
           </li>
           <li>
-            <strong>Correcoes</strong>
+            <strong>Correções</strong>
             <ul>
               <li>
-                No celular, se o audio nao tocar sozinho, aparece o botao
+                No celular, se o áudio não tocar sozinho, aparece o botão
                 <strong>Toque para reproduzir</strong>.
               </li>
               <li>
@@ -314,18 +309,18 @@
         <div class="patch-header">
           <h2>v1.0.0</h2>
         </div>
-        <p class="hint patch-date">Versao inicial</p>
+        <p class="hint patch-date">Versão inicial</p>
 
         <ul class="patch-tree">
           <li>
             <strong>Funcionalidades</strong>
             <ul>
               <li>
-                <strong>Audios</strong>
+                <strong>Áudios</strong>
                 <ul>
-                  <li>Enviar audios e guardar na nuvem.</li>
+                  <li>Enviar áudios e guardar na nuvem.</li>
                   <li>
-                    Ver a lista de audios salvos, tocar na hora ou excluir.
+                    Ver a lista de áudios salvos, tocar na hora ou excluir.
                   </li>
                 </ul>
               </li>
@@ -337,10 +332,10 @@
                     tela.
                   </li>
                   <li>
-                    Ao terminar, um audio era escolhido ao acaso — todos tinham
+                    Ao terminar, um áudio era escolhido ao acaso — todos tinham
                     a mesma chance.
                   </li>
-                  <li>Cancelar o timer ou parar um audio em andamento.</li>
+                  <li>Cancelar o timer ou parar um áudio em andamento.</li>
                 </ul>
               </li>
               <li>
@@ -356,7 +351,7 @@
 
       <footer class="page-footer">
         <a class="footer-link" href="./">Voltar ao Nostrabot</a>
-        <span class="footer-version">v1.6.0</span>
+        <span class="footer-version">v1.7.0</span>
       </footer>
     </main>
 
@@ -371,20 +366,11 @@
     <script>
       const themeToggle = document.getElementById("themeToggle");
 
-      function getPreferredTheme() {
-        const stored = localStorage.getItem("theme");
-        if (stored === "light" || stored === "dark") return stored;
-        const prefersDark =
-          window.matchMedia &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches;
-        return prefersDark ? "dark" : "light";
-      }
-
       function applyTheme(theme) {
         document.body.setAttribute("data-theme", theme);
         if (!themeToggle) return;
         themeToggle.textContent =
-          theme === "dark" ? "Tema: Mistico" : "Tema: Claro";
+          theme === "dark" ? "Tema: Místico" : "Tema: Claro";
       }
 
       function getPreferred() {

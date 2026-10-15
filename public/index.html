@@ -17,208 +17,201 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body data-theme="dark">
-    <main class="container">
-      <div id="setupScreen">
-        <div class="topbar">
-          <h1>Nostrabot</h1>
-          <button id="themeToggle" class="secondary" type="button">
-            Tema: Mistico
-          </button>
+    <div id="appShell" class="app-shell">
+      <header class="app-topbar">
+        <div class="brand-block">
+          <img class="brand-mark" src="./favicon.svg" alt="" width="36" height="36" />
+          <div>
+            <h1>Nostrabot</h1>
+            <p class="brand-tagline">Timer ponderado para as gravações</p>
+          </div>
         </div>
+        <div class="topbar-actions">
+          <button id="themeToggle" class="secondary" type="button">
+            Tema: Místico
+          </button>
+          <button id="changeAdminKeyButton" class="secondary" type="button">
+            Chave
+          </button>
+          <a class="footer-link" href="./patch">Novidades</a>
+          <span class="footer-version">v1.7.0</span>
+        </div>
+      </header>
 
-        <p class="subtitle">
-          Biblioteca de audios no Supabase para marcar o tempo das gravacoes
-          com os amigos.
-        </p>
+      <div class="app-grid">
+        <aside class="panel panel-left glass" aria-label="Biblioteca de áudios">
+          <div class="panel-header">
+            <h2>Biblioteca</h2>
+            <span id="audioDropdownSummary" class="panel-count">0</span>
+          </div>
 
-        <section class="card">
-          <h2>1) Enviar audio</h2>
           <div
             id="dropZone"
-            class="drop-zone"
+            class="drop-zone drop-zone--compact"
             tabindex="0"
-            aria-label="Area para soltar arquivos de audio"
+            aria-label="Área para soltar arquivos de áudio"
           >
-            <p>
-              Arraste audios aqui ou escolha arquivos. Compressao automatica
-              para Opus/WebM.
-            </p>
+            <p>Arraste áudios aqui ou escolha arquivos.</p>
             <div class="row">
               <input id="audioInput" type="file" accept="audio/*" multiple />
               <button id="saveButton" type="button">Enviar</button>
               <button id="recordButton" class="secondary" type="button">
-                Gravar microfone
-              </button>
-              <button id="changeAdminKeyButton" class="secondary" type="button">
-                Alterar chave
+                Microfone
               </button>
             </div>
           </div>
           <div id="uploadProgressList" class="upload-progress-list" hidden></div>
-          <p class="hint">
-            Upload/exclusao usam a chave de admin. Limite 25 MB. Dados no bucket
-            publico <code>audios</code>.
-          </p>
           <p id="uploadStatus" class="status" role="status" aria-live="polite"></p>
-        </section>
 
-        <section class="card">
-          <h2>2) Audios salvos</h2>
-          <div class="row list-toolbar">
+          <div class="list-toolbar">
             <input
               id="audioSearch"
               type="search"
-              placeholder="Buscar nome ou descricao"
-              aria-label="Buscar audios"
+              placeholder="Buscar..."
+              aria-label="Buscar áudios"
             />
             <button id="trashToggleButton" class="secondary" type="button">
               Lixeira
             </button>
-            <button id="migrateBlobButton" class="secondary" type="button">
-              Migrar Blob
+          </div>
+          <p class="hint" id="listHint">O peso define a chance no sorteio.</p>
+          <ul id="audioList" class="audio-list audio-list--compact"></ul>
+        </aside>
+
+        <section class="panel panel-center glass" aria-label="Palco do timer">
+          <div id="setupScreen" class="stage-setup">
+            <p class="stage-kicker">Contagem</p>
+            <div class="stage-controls">
+              <label class="field">
+                <span>Min</span>
+                <input
+                  id="timerAmountMin"
+                  type="number"
+                  min="1"
+                  value="30"
+                  aria-label="Tempo mínimo"
+                />
+              </label>
+              <label class="field">
+                <span>Max</span>
+                <input
+                  id="timerAmountMax"
+                  type="number"
+                  min="1"
+                  value="60"
+                  aria-label="Tempo máximo"
+                />
+              </label>
+              <select id="timerUnit" aria-label="Unidade de tempo">
+                <option value="seconds">Segundos</option>
+                <option value="minutes">Minutos</option>
+              </select>
+            </div>
+
+            <div class="row timer-options">
+              <label class="check">
+                <input id="timerAutoRepeat" type="checkbox" />
+                Repetir
+              </label>
+              <label class="check">
+                <input id="timerNoRepeat" type="checkbox" />
+                Sem repetir até todos
+              </label>
+              <label class="check">
+                <input id="timerNotify" type="checkbox" checked />
+                Notificar
+              </label>
+            </div>
+
+            <button id="startRandomTimerButton" class="cta-start" type="button">
+              Iniciar timer
+            </button>
+            <p id="timerSetupStatus" class="status" role="status" aria-live="polite"></p>
+          </div>
+
+          <div id="timerScreen" class="timer-stage" hidden>
+            <div class="timer-widget timer-widget--stage">
+              <svg
+                id="timerSvg"
+                class="timer-ring"
+                width="400"
+                height="400"
+                viewBox="0 0 400 400"
+                aria-label="Progresso do timer"
+              >
+                <circle class="ring-bg" cx="200" cy="200" r="180"></circle>
+                <circle
+                  id="timerProgressRing"
+                  class="ring-progress"
+                  cx="200"
+                  cy="200"
+                  r="180"
+                ></circle>
+              </svg>
+              <div class="timer-center">
+                <div
+                  id="timeRemainingLabel"
+                  class="time-remaining time-remaining--xl"
+                >
+                  --:--
+                </div>
+                <div id="timerStateLabel" class="time-caption">Aguardando</div>
+              </div>
+            </div>
+
+            <div class="timer-screen-actions">
+              <button id="pauseResumeTimerButton" class="secondary" type="button">
+                Pausar
+              </button>
+              <button
+                id="cancelRandomTimerButton"
+                class="secondary"
+                type="button"
+                disabled
+              >
+                Cancelar
+              </button>
+            </div>
+
+            <button
+              id="playFallbackButton"
+              class="play-fallback"
+              type="button"
+              hidden
+            >
+              Toque para reproduzir
             </button>
           </div>
-          <p class="hint" id="listHint">
-            Peso no banco controla a chance no timer. Itens excluidos ficam 30
-            dias na lixeira.
-          </p>
-          <details class="audio-dropdown" open>
-            <summary id="audioDropdownSummary">Audios salvos (0)</summary>
-            <ul id="audioList" class="audio-list"></ul>
-          </details>
         </section>
 
-        <section class="card">
-          <h2>3) Timer com sorteio ponderado</h2>
-          <p class="hint">
-            Contagem grande, pausa, repeticao automatica e intervalo aleatorio
-            entre minimo e maximo.
-          </p>
-
-          <div class="row">
-            <label class="field">
-              <span>Min</span>
-              <input
-                id="timerAmountMin"
-                type="number"
-                min="1"
-                value="30"
-                aria-label="Tempo minimo"
-              />
-            </label>
-            <label class="field">
-              <span>Max</span>
-              <input
-                id="timerAmountMax"
-                type="number"
-                min="1"
-                value="60"
-                aria-label="Tempo maximo"
-              />
-            </label>
-            <select id="timerUnit" aria-label="Unidade de tempo">
-              <option value="seconds">Segundos</option>
-              <option value="minutes">Minutos</option>
-            </select>
-            <button id="startRandomTimerButton" type="button">Iniciar timer</button>
+        <aside class="panel panel-right glass" aria-label="Sala e histórico">
+          <div class="panel-header">
+            <h2>Sala</h2>
           </div>
-
-          <div class="row timer-options">
-            <label class="check">
-              <input id="timerAutoRepeat" type="checkbox" />
-              Repetir automaticamente
-            </label>
-            <label class="check">
-              <input id="timerNoRepeat" type="checkbox" />
-              Sem repetir ate tocar todos
-            </label>
-            <label class="check">
-              <input id="timerNotify" type="checkbox" checked />
-              Notificar ao terminar
-            </label>
-          </div>
-          <p id="timerSetupStatus" class="status" role="status" aria-live="polite"></p>
-        </section>
-
-        <section class="card">
-          <h2>4) Sala compartilhada</h2>
           <p class="hint">
-            Crie uma sala e compartilhe o link. O timer usa relogio do servidor
-            para todos terminarem juntos.
+            Compartilhe o link para todo mundo acompanhar o mesmo timer.
           </p>
           <div class="row">
             <button id="createRoomButton" type="button">Criar sala</button>
-            <button id="copyRoomLinkButton" class="secondary" type="button" disabled>
+            <button
+              id="copyRoomLinkButton"
+              class="secondary"
+              type="button"
+              disabled
+            >
               Copiar link
             </button>
-            <span id="roomStatus" class="room-status">Sem sala</span>
           </div>
+          <p id="roomStatus" class="room-status">Sem sala</p>
           <p id="roomHint" class="hint"></p>
-        </section>
 
-        <section class="card">
-          <h2>5) Historico de toques</h2>
-          <p class="hint">Ultimos audios sorteados (local / sala).</p>
-          <ul id="playHistoryList" class="history-list"></ul>
-        </section>
-      </div>
-
-      <div id="timerScreen" class="timer-screen" hidden>
-        <div class="timer-screen-actions">
-          <button id="pauseResumeTimerButton" class="secondary" type="button">
-            Pausar
-          </button>
-          <button
-            id="cancelRandomTimerButton"
-            class="secondary"
-            type="button"
-            disabled
-          >
-            Cancelar
-          </button>
-        </div>
-
-        <div class="timer-widget timer-widget--fullscreen">
-          <svg
-            id="timerSvg"
-            class="timer-ring"
-            width="400"
-            height="400"
-            viewBox="0 0 400 400"
-            aria-label="Progresso do timer"
-          >
-            <circle class="ring-bg" cx="200" cy="200" r="180"></circle>
-            <circle
-              id="timerProgressRing"
-              class="ring-progress"
-              cx="200"
-              cy="200"
-              r="180"
-            ></circle>
-          </svg>
-          <div class="timer-center">
-            <div id="timeRemainingLabel" class="time-remaining time-remaining--xl">
-              --:--
-            </div>
-            <div id="timerStateLabel" class="time-caption">Aguardando</div>
+          <div class="panel-header panel-header--spaced">
+            <h2>Histórico</h2>
           </div>
-        </div>
-
-        <button
-          id="playFallbackButton"
-          class="play-fallback"
-          type="button"
-          hidden
-        >
-          Toque para reproduzir
-        </button>
+          <ul id="playHistoryList" class="history-list"></ul>
+        </aside>
       </div>
-
-      <footer class="page-footer">
-        <a class="footer-link" href="./patch">Novidades</a>
-        <span class="footer-version">v1.6.0</span>
-      </footer>
-    </main>
+    </div>
 
     <script>
       window.va =
