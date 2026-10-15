@@ -1,36 +1,30 @@
-import { isSchemaMissingError, supabase } from "./supabase-client.js";
-
 export async function recordPlayEvent({ audioId, audioName, audioUrl, roomId }) {
   try {
-    const { error } = await supabase.rpc("record_play", {
-      p_audio_id: audioId || null,
-      p_audio_name: audioName || null,
-      p_audio_url: audioUrl || null,
-      p_room_id: roomId || null
+    const response = await fetch("/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audioId, audioName, audioUrl, roomId })
     });
-    if (error && !isSchemaMissingError(error)) {
-      console.warn("Falha ao gravar historico:", error.message);
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      console.warn("Falha ao gravar histórico:", data.error || response.status);
     }
   } catch (error) {
-    if (!isSchemaMissingError(error)) {
-      console.warn("Falha ao gravar historico:", error);
-    }
+    console.warn("Falha ao gravar histórico:", error);
   }
 }
 
 export async function listPlayHistory({ roomId = null, limit = 30 } = {}) {
   try {
-    const { data, error } = await supabase.rpc("list_play_history", {
-      p_room_id: roomId,
-      p_limit: limit
-    });
-    if (error) {
-      if (isSchemaMissingError(error)) return [];
-      throw error;
-    }
-    return data || [];
+    const params = new URLSearchParams();
+    if (roomId) params.set("roomId", roomId);
+    params.set("limit", String(limit));
+    const response = await fetch(`/api/history?${params}`);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.events || [];
   } catch (error) {
-    if (isSchemaMissingError(error)) return [];
-    throw error;
+    console.warn(error);
+    return [];
   }
 }

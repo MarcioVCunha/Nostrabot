@@ -1,4 +1,4 @@
-const CACHE = "nostrabot-shell-v1.6";
+const CACHE = "nostrabot-shell-v1.8";
 const SHELL = [
   "./",
   "./index.html",
@@ -16,11 +16,12 @@ const SHELL = [
   "./js/toast.js",
   "./js/compress.js",
   "./js/recorder.js",
-  "./js/supabase-client.js",
   "./js/draw.js",
   "./js/history.js",
   "./js/notifications.js",
-  "./js/rooms.js"
+  "./js/rooms.js",
+  "./js/prank-ad.js",
+  "./img/anuncio-chica.png"
 ];
 
 self.addEventListener("install", (event) => {

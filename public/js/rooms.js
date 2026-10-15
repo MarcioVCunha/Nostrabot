@@ -1,5 +1,3 @@
-import { isSchemaMissingError, supabase } from "./supabase-client.js";
-
 let clockOffsetMs = 0;
 
 export function getRoomCodeFromLocation() {
@@ -28,83 +26,115 @@ export function serverNowMs() {
 
 export async function syncServerClock() {
   try {
-    const { data, error } = await supabase.rpc("server_now");
-    if (error) throw error;
-    applyServerNow(data);
+    const response = await fetch("/api/rooms");
+    const data = await response.json().catch(() => ({}));
+    if (data.server_now) applyServerNow(data.server_now);
     return clockOffsetMs;
   } catch (error) {
-    if (!isSchemaMissingError(error)) console.warn(error);
+    console.warn(error);
     return 0;
   }
 }
 
+async function readRoomError(response, fallback) {
+  const data = await response.json().catch(() => ({}));
+  return data.error || fallback;
+}
+
 export async function createRoom(name = "Sala Nostrabot") {
-  const { data, error } = await supabase.rpc("create_room", {
-    p_name: name,
-    p_host_label: "host"
+  const response = await fetch("/api/rooms", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "create", name })
   });
-  if (error) {
-    if (isSchemaMissingError(error)) {
-      throw new Error("Salas ainda indisponíveis. Tente mais tarde.");
-    }
-    throw new Error(error.message || "Falha ao criar sala.");
+  if (!response.ok) {
+    throw new Error(await readRoomError(response, "Falha ao criar sala."));
   }
-  applyServerNow(data.server_now);
-  return data;
+  const data = await response.json();
+  if (data.room?.server_now) applyServerNow(data.room.server_now);
+  return data.room;
 }
 
 export async function getRoom(code) {
-  const { data, error } = await supabase.rpc("get_room", {
-    p_code: code
-  });
-  if (error) {
-    if (isSchemaMissingError(error)) {
-      throw new Error("Salas ainda indisponíveis. Tente mais tarde.");
-    }
-    throw new Error(error.message || "Sala não encontrada.");
+  const response = await fetch(
+    `/api/rooms?code=${encodeURIComponent(String(code || "").toUpperCase())}`
+  );
+  if (!response.ok) {
+    throw new Error(await readRoomError(response, "Sala não encontrada."));
   }
-  applyServerNow(data.server_now);
-  return data;
+  const data = await response.json();
+  if (data.room?.server_now) applyServerNow(data.room.server_now);
+  return data.room;
 }
 
 export async function startRoomTimer(code, durationMs) {
-  const { data, error } = await supabase.rpc("start_room_timer", {
-    p_code: code,
-    p_duration_ms: Math.round(durationMs)
+  const response = await fetch("/api/rooms", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "start",
+      code,
+      durationMs: Math.round(durationMs)
+    })
   });
-  if (error) throw new Error(error.message || "Falha ao iniciar timer da sala.");
-  applyServerNow(data.server_now);
-  return data;
+  if (!response.ok) {
+    throw new Error(
+      await readRoomError(response, "Falha ao iniciar timer da sala.")
+    );
+  }
+  const data = await response.json();
+  if (data.room?.server_now) applyServerNow(data.room.server_now);
+  return data.room;
 }
 
 export async function setRoomState(code, state) {
-  const { data, error } = await supabase.rpc("set_room_state", {
-    p_code: code,
-    p_state: state
+  const response = await fetch("/api/rooms", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "state", code, state })
   });
-  if (error) throw new Error(error.message || "Falha ao atualizar sala.");
-  applyServerNow(data.server_now);
-  return data;
+  if (!response.ok) {
+    throw new Error(await readRoomError(response, "Falha ao atualizar sala."));
+  }
+  const data = await response.json();
+  if (data.room?.server_now) applyServerNow(data.room.server_now);
+  return data.room;
 }
 
+/**
+ * Poll room state about once per second (replaces Realtime).
+ * @param {string} code
+ * @param {(room: object) => void} onChange
+ * @returns {() => void} unsubscribe
+ */
 export function subscribeRoom(code, onChange) {
-  const channel = supabase
-    .channel(`room:${code}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "rooms",
-        filter: `code=eq.${code}`
-      },
-      (payload) => {
-        if (typeof onChange === "function") onChange(payload.new || payload.record);
+  let stopped = false;
+  let timer = null;
+  let lastUpdated = null;
+
+  const tick = async () => {
+    if (stopped) return;
+    try {
+      const room = await getRoom(code);
+      if (stopped || !room) return;
+      const stamp = room.updated_at || room.server_now;
+      if (stamp !== lastUpdated) {
+        lastUpdated = stamp;
+        if (typeof onChange === "function") onChange(room);
+      } else if (room.server_now) {
+        applyServerNow(room.server_now);
       }
-    )
-    .subscribe();
+    } catch (error) {
+      console.warn("Falha ao sincronizar sala:", error);
+    } finally {
+      if (!stopped) timer = setTimeout(tick, 1000);
+    }
+  };
+
+  tick();
 
   return () => {
-    supabase.removeChannel(channel);
+    stopped = true;
+    if (timer) clearTimeout(timer);
   };
 }
