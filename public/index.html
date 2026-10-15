@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b6bcb" />
     <title>Nostrabot</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon-192.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.svg" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -131,7 +135,23 @@
         </section>
 
         <section class="card">
-          <h2>4) Historico de toques</h2>
+          <h2>4) Sala compartilhada</h2>
+          <p class="hint">
+            Crie uma sala e compartilhe o link. O timer usa relogio do servidor
+            para todos terminarem juntos.
+          </p>
+          <div class="row">
+            <button id="createRoomButton" type="button">Criar sala</button>
+            <button id="copyRoomLinkButton" class="secondary" type="button" disabled>
+              Copiar link
+            </button>
+            <span id="roomStatus" class="room-status">Sem sala</span>
+          </div>
+          <p id="roomHint" class="hint"></p>
+        </section>
+
+        <section class="card">
+          <h2>5) Historico de toques</h2>
           <p class="hint">Ultimos audios sorteados (local / sala).</p>
           <ul id="playHistoryList" class="history-list"></ul>
         </section>
@@ -190,7 +210,7 @@
 
       <footer class="page-footer">
         <a class="footer-link" href="./patch">Novidades</a>
-        <span class="footer-version">v1.4.0</span>
+        <span class="footer-version">v1.5.0</span>
       </footer>
     </main>
 
@@ -203,5 +223,12 @@
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
     <script type="module" src="./js/main.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>

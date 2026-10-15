@@ -15,6 +15,17 @@ import {
   notifyTimerEnded
 } from "./notifications.js";
 import { createMicRecorder } from "./recorder.js";
+import {
+  createRoom,
+  getRoom,
+  getRoomCodeFromLocation,
+  serverNowMs,
+  setRoomInLocation,
+  setRoomState,
+  startRoomTimer,
+  subscribeRoom,
+  syncServerClock
+} from "./rooms.js";
 import { initThemeToggle } from "./theme.js";
 import { showToast } from "./toast.js";
 import {
@@ -54,6 +65,10 @@ const timeRemainingLabel = document.getElementById("timeRemainingLabel");
 const timerStateLabel = document.getElementById("timerStateLabel");
 const listHint = document.getElementById("listHint");
 const playHistoryList = document.getElementById("playHistoryList");
+const createRoomButton = document.getElementById("createRoomButton");
+const copyRoomLinkButton = document.getElementById("copyRoomLinkButton");
+const roomStatus = document.getElementById("roomStatus");
+const roomHint = document.getElementById("roomHint");
 
 let cachedRecords = [];
 let audioWeights = {};
@@ -68,6 +83,9 @@ let showingTrash = false;
 let searchQuery = "";
 let schemaMissing = false;
 let pendingAutoRepeat = false;
+let currentRoomCode = null;
+let unsubRoom = null;
+let applyingRemoteState = false;
 
 const TIMER_PREFS_KEY = "timerPrefs";
 const ACTIVE_TIMER_KEY = "activeTimer";
@@ -341,13 +359,36 @@ function stopCountdown(stateText) {
 
 function updateCountdownUi() {
   if (!activeCountdown) return;
-  const now = Date.now();
+  const now = currentRoomCode ? serverNowMs() : Date.now();
   const remaining = Math.max(0, activeCountdown.endAt - now);
   const elapsed = activeCountdown.durationMs - remaining;
   const percent = (elapsed / activeCountdown.durationMs) * 100;
   setRingProgress(percent);
   timeRemainingLabel.textContent = toRemainingLabel(remaining);
   if (remaining <= 0 && isTimerRunning) handleTimerComplete();
+}
+
+function updateRoomUi() {
+  if (roomStatus) {
+    roomStatus.textContent = currentRoomCode
+      ? `Sala ${currentRoomCode}`
+      : "Sem sala";
+  }
+  if (copyRoomLinkButton) copyRoomLinkButton.disabled = !currentRoomCode;
+  if (roomHint) {
+    roomHint.textContent = currentRoomCode
+      ? `Link: ${window.location.origin}${window.location.pathname}?room=${currentRoomCode}`
+      : "";
+  }
+}
+
+async function publishRoomState(partial) {
+  if (!currentRoomCode || applyingRemoteState) return;
+  try {
+    await setRoomState(currentRoomCode, partial);
+  } catch (error) {
+    console.warn("Falha ao sincronizar sala:", error);
+  }
 }
 
 function pickDurationMs() {
@@ -411,6 +452,7 @@ function handleTimerComplete() {
     isTimerRunning = false;
     releaseWakeLock();
     updateUiLock();
+    publishRoomState({ status: "idle", ends_at: null, drawn_audio: null });
     showSetupScreen();
     return;
   }
@@ -421,6 +463,16 @@ function handleTimerComplete() {
   timeRemainingLabel.textContent = "00:00";
   timerStateLabel.textContent = "Tocando...";
 
+  publishRoomState({
+    status: "playing",
+    ends_at: null,
+    drawn_audio: {
+      id: chosen.id,
+      name: getDisplayName(chosen),
+      url: chosen.url
+    }
+  });
+
   playUrl(chosen.url, {
     allowFallback: true,
     onPlayStart: () => {
@@ -430,7 +482,7 @@ function handleTimerComplete() {
         audioId: chosen.id,
         audioName: getDisplayName(chosen),
         audioUrl: chosen.url,
-        roomId: null
+        roomId: currentRoomCode
       }).then(() => refreshHistory());
     }
   });
@@ -440,7 +492,7 @@ function startCountdown(durationMs, resumeState = null) {
   if (activeCountdown?.timeoutId) clearTimeout(activeCountdown.timeoutId);
   if (activeCountdown?.intervalId) clearInterval(activeCountdown.intervalId);
 
-  const startAt = Date.now();
+  const startAt = currentRoomCode ? serverNowMs() : Date.now();
   const endAt = resumeState?.endAt ?? startAt + durationMs;
   const totalDurationMs = resumeState?.durationMs ?? durationMs;
   const remainingMs = Math.max(0, endAt - startAt);
@@ -466,7 +518,8 @@ function startCountdown(durationMs, resumeState = null) {
 
 function pauseTimer() {
   if (!activeCountdown || isTimerPaused || isAudioPlaying) return;
-  const remaining = Math.max(0, activeCountdown.endAt - Date.now());
+  const now = currentRoomCode ? serverNowMs() : Date.now();
+  const remaining = Math.max(0, activeCountdown.endAt - now);
   if (activeCountdown.timeoutId) clearTimeout(activeCountdown.timeoutId);
   if (activeCountdown.intervalId) clearInterval(activeCountdown.intervalId);
   activeCountdown.remainingMs = remaining;
@@ -477,15 +530,81 @@ function pauseTimer() {
   timerStateLabel.textContent = "Pausado";
   releaseWakeLock();
   updateUiLock();
+  publishRoomState({
+    status: "paused",
+    remaining_ms: remaining,
+    duration_ms: activeCountdown.durationMs,
+    ends_at: null
+  });
 }
 
 function resumeTimer() {
   if (!activeCountdown || !isTimerPaused) return;
   const remaining = activeCountdown.remainingMs ?? 0;
+  const endAt = (currentRoomCode ? serverNowMs() : Date.now()) + remaining;
   startCountdown(activeCountdown.durationMs, {
-    endAt: Date.now() + remaining,
+    endAt,
     durationMs: activeCountdown.durationMs
   });
+  publishRoomState({
+    status: "running",
+    remaining_ms: null,
+    duration_ms: activeCountdown.durationMs,
+    ends_at: new Date(endAt).toISOString()
+  });
+}
+
+function applyRemoteRoomState(row) {
+  if (!row?.state) return;
+  applyingRemoteState = true;
+  try {
+    const state = row.state;
+    if (state.status === "running" && state.ends_at) {
+      const endAt = new Date(state.ends_at).getTime();
+      const durationMs = Number(state.duration_ms) || Math.max(1000, endAt - serverNowMs());
+      if (!isTimerRunning || Math.abs((activeCountdown?.endAt || 0) - endAt) > 750) {
+        startCountdown(durationMs, { endAt, durationMs });
+      }
+      return;
+    }
+    if (state.status === "paused" && state.remaining_ms != null) {
+      if (activeCountdown?.timeoutId) clearTimeout(activeCountdown.timeoutId);
+      if (activeCountdown?.intervalId) clearInterval(activeCountdown.intervalId);
+      activeCountdown = {
+        durationMs: Number(state.duration_ms) || state.remaining_ms,
+        endAt: serverNowMs() + Number(state.remaining_ms),
+        remainingMs: Number(state.remaining_ms),
+        intervalId: null,
+        timeoutId: null
+      };
+      isTimerPaused = true;
+      isTimerRunning = false;
+      showTimerScreen();
+      timerStateLabel.textContent = "Pausado";
+      timeRemainingLabel.textContent = toRemainingLabel(Number(state.remaining_ms));
+      updateUiLock();
+      return;
+    }
+    if (state.status === "playing" && state.drawn_audio?.url && !isAudioPlaying) {
+      isTimerRunning = false;
+      isTimerPaused = false;
+      showTimerScreen();
+      playUrl(state.drawn_audio.url, { allowFallback: true });
+    }
+  } finally {
+    applyingRemoteState = false;
+  }
+}
+
+async function joinRoom(code) {
+  const room = await getRoom(code);
+  currentRoomCode = room.code;
+  setRoomInLocation(room.code);
+  updateRoomUi();
+  if (unsubRoom) unsubRoom();
+  unsubRoom = subscribeRoom(room.code, (row) => applyRemoteRoomState(row));
+  applyRemoteRoomState(room);
+  showUploadStatus(`Entrou na sala ${room.code}.`);
 }
 
 function createProgressRow(label) {
@@ -771,7 +890,15 @@ async function startRandomTimer() {
   if (timerNotify?.checked) {
     await ensureNotificationPermission();
   }
-  startCountdown(pickDurationMs());
+  const durationMs = pickDurationMs();
+  if (currentRoomCode) {
+    await syncServerClock();
+    const room = await startRoomTimer(currentRoomCode, durationMs);
+    const endAt = new Date(room.state.ends_at).getTime();
+    startCountdown(durationMs, { endAt, durationMs });
+    return;
+  }
+  startCountdown(durationMs);
 }
 
 function cancelRandomTimer() {
@@ -785,6 +912,12 @@ function cancelRandomTimer() {
   hidePlayFallback();
   updateUiLock();
   if (activeCountdown) stopCountdown("Timer cancelado");
+  publishRoomState({
+    status: "idle",
+    ends_at: null,
+    remaining_ms: null,
+    drawn_audio: null
+  });
   showSetupScreen();
 }
 
@@ -958,8 +1091,52 @@ async function init() {
       });
     }
 
+    if (createRoomButton) {
+      createRoomButton.addEventListener("click", async () => {
+        createRoomButton.disabled = true;
+        try {
+          const room = await createRoom("Sala Nostrabot");
+          currentRoomCode = room.code;
+          setRoomInLocation(room.code);
+          updateRoomUi();
+          if (unsubRoom) unsubRoom();
+          unsubRoom = subscribeRoom(room.code, (row) => applyRemoteRoomState(row));
+          showUploadStatus(`Sala ${room.code} criada. Compartilhe o link.`);
+        } catch (error) {
+          showUploadStatus(error.message || "Falha ao criar sala.", true);
+        } finally {
+          createRoomButton.disabled = false;
+        }
+      });
+    }
+
+    if (copyRoomLinkButton) {
+      copyRoomLinkButton.addEventListener("click", async () => {
+        if (!currentRoomCode) return;
+        const link = `${window.location.origin}${window.location.pathname}?room=${currentRoomCode}`;
+        try {
+          await navigator.clipboard.writeText(link);
+          showUploadStatus("Link da sala copiado.");
+        } catch (error) {
+          showUploadStatus(link);
+        }
+      });
+    }
+
     await refreshList();
     await refreshHistory();
+    await syncServerClock();
+    updateRoomUi();
+
+    const initialRoom = getRoomCodeFromLocation();
+    if (initialRoom) {
+      try {
+        await joinRoom(initialRoom);
+      } catch (error) {
+        showUploadStatus(error.message || "Nao foi possivel entrar na sala.", true);
+      }
+    }
+
     await resumeTimerIfStored();
     timerStateLabel.textContent = "Aguardando";
     updateUiLock();
