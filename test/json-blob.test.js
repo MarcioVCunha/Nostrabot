@@ -17,7 +17,6 @@ describe("writeJsonBlob always allowOverwrite", () => {
           head: async () => {
             throw Object.assign(new Error("not found"), { status: 404 });
           },
-          get: async () => null,
           BlobNotFoundError: class BlobNotFoundError extends Error {}
         };
       }
@@ -32,7 +31,7 @@ describe("writeJsonBlob always allowOverwrite", () => {
       assert.equal(seen.allowOverwrite, true);
       assert.equal(seen.addRandomSuffix, false);
       assert.equal(seen.cacheControlMaxAge, 0);
-      assert.equal(seen.access, "private");
+      assert.equal(seen.access, "public");
 
       await writeJsonBlob(
         "data/audios-index.json",
@@ -65,107 +64,8 @@ describe("friendlyError", () => {
   });
 });
 
-describe("readJsonBlob fresh get()", () => {
-  it("usa get private useCache:false quando disponivel", async () => {
-    const originalLoad = Module._load;
-    let getOpts = null;
-
-    Module._load = function mockLoad(request, parent, isMain) {
-      if (request === "@vercel/blob") {
-        return {
-          put: async () => ({}),
-          head: async () => {
-            throw new Error("head nao deve ser chamado");
-          },
-          get: async (_pathname, options) => {
-            getOpts = options;
-            const encoded = new TextEncoder().encode(
-              JSON.stringify({ version: 1, items: [{ id: "1", name: "ok" }] })
-            );
-            return {
-              statusCode: 200,
-              stream: new ReadableStream({
-                start(controller) {
-                  controller.enqueue(encoded);
-                  controller.close();
-                }
-              }),
-              blob: { etag: '"fresh-etag"' }
-            };
-          },
-          BlobNotFoundError: class BlobNotFoundError extends Error {}
-        };
-      }
-      return originalLoad(request, parent, isMain);
-    };
-
-    try {
-      delete require.cache[require.resolve("../lib/json-blob.js")];
-      const { readJsonBlob } = require("../lib/json-blob.js");
-      const result = await readJsonBlob("rooms/ABC.json", null);
-      assert.equal(getOpts.access, "private");
-      assert.equal(getOpts.useCache, false);
-      assert.equal(result.etag, '"fresh-etag"');
-      assert.equal(result.data.items[0].name, "ok");
-    } finally {
-      Module._load = originalLoad;
-      delete require.cache[require.resolve("../lib/json-blob.js")];
-    }
-  });
-
-  it("fallback head+fetch com cache=0 quando get falha", async () => {
-    const originalLoad = Module._load;
-    const originalFetch = global.fetch;
-    let fetchedUrl = "";
-
-    Module._load = function mockLoad(request, parent, isMain) {
-      if (request === "@vercel/blob") {
-        return {
-          put: async () => ({}),
-          head: async () => ({
-            url: "https://example.public.blob.vercel-storage.com/data/audios-index.json",
-            etag: '"etag-123"'
-          }),
-          get: async () => {
-            throw Object.assign(new Error("not found"), { status: 404 });
-          },
-          BlobNotFoundError: class BlobNotFoundError extends Error {}
-        };
-      }
-      return originalLoad(request, parent, isMain);
-    };
-
-    global.fetch = async (url) => {
-      fetchedUrl = String(url);
-      return {
-        status: 200,
-        ok: true,
-        headers: { get: () => null },
-        async text() {
-          return JSON.stringify({
-            version: 1,
-            items: [{ id: "1", name: "Deram 20 minutos" }]
-          });
-        }
-      };
-    };
-
-    try {
-      delete require.cache[require.resolve("../lib/json-blob.js")];
-      const { readJsonBlob } = require("../lib/json-blob.js");
-      const result = await readJsonBlob("data/audios-index.json", null);
-      assert.equal(result.etag, '"etag-123"');
-      assert.equal(result.data.items[0].name, "Deram 20 minutos");
-      assert.match(fetchedUrl, /cache=0/);
-      assert.match(fetchedUrl, /_ts=/);
-    } finally {
-      Module._load = originalLoad;
-      global.fetch = originalFetch;
-      delete require.cache[require.resolve("../lib/json-blob.js")];
-    }
-  });
-
-  it("head 404 retorna fallback", async () => {
+describe("readJsonBlob head-first behavior", () => {
+  it("nao usa get(); head 404 retorna fallback sem 403", async () => {
     const originalLoad = Module._load;
     const headCalls = [];
 
@@ -177,7 +77,9 @@ describe("readJsonBlob fresh get()", () => {
             headCalls.push(pathname);
             throw Object.assign(new Error("not found"), { status: 404 });
           },
-          get: async () => null,
+          get: async () => {
+            throw new Error("get() nao deve ser chamado");
+          },
           BlobNotFoundError: class BlobNotFoundError extends Error {}
         };
       }
@@ -193,8 +95,65 @@ describe("readJsonBlob fresh get()", () => {
       });
       assert.deepEqual(result.data, { version: 1, items: [] });
       assert.equal(result.etag, null);
+      assert.deepEqual(headCalls, ["data/audios-index.json"]);
     } finally {
       Module._load = originalLoad;
+      delete require.cache[require.resolve("../lib/json-blob.js")];
+    }
+  });
+
+  it("usa etag do head e faz fetch com cache-bust", async () => {
+    const originalLoad = Module._load;
+    const originalFetch = global.fetch;
+    let fetchedUrl = "";
+    let headCount = 0;
+
+    Module._load = function mockLoad(request, parent, isMain) {
+      if (request === "@vercel/blob") {
+        return {
+          put: async () => ({}),
+          head: async () => {
+            headCount += 1;
+            return {
+              url: "https://example.public.blob.vercel-storage.com/data/audios-index.json",
+              etag: '"etag-123"'
+            };
+          },
+          get: async () => {
+            throw new Error("get() nao deve ser chamado");
+          },
+          BlobNotFoundError: class BlobNotFoundError extends Error {}
+        };
+      }
+      return originalLoad(request, parent, isMain);
+    };
+
+    global.fetch = async (url) => {
+      fetchedUrl = String(url);
+      return {
+        status: 200,
+        ok: true,
+        async text() {
+          return JSON.stringify({
+            version: 1,
+            items: [{ id: "1", name: "Deram 20 minutos" }]
+          });
+        }
+      };
+    };
+
+    try {
+      delete require.cache[require.resolve("../lib/json-blob.js")];
+      const { readJsonBlob } = require("../lib/json-blob.js");
+      const result = await readJsonBlob("data/audios-index.json", null);
+      assert.equal(result.etag, '"etag-123"');
+      assert.equal(result.data.items[0].name, "Deram 20 minutos");
+      assert.match(fetchedUrl, /_ts=/);
+      assert.match(fetchedUrl, /cache=0/);
+      assert.ok(headCount >= 1);
+    } finally {
+      Module._load = originalLoad;
+      global.fetch = originalFetch;
       delete require.cache[require.resolve("../lib/json-blob.js")];
     }
   });
