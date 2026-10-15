@@ -3,66 +3,76 @@
 }
 
 :root {
-  --bg: #f5f7fb;
-  --text: #1b1f23;
-  --subtitle: #475467;
-  --card-bg: #ffffff;
-  --card-border: #d9e0ea;
-  --input-bg: #fff;
-  --input-border: #c7d2e0;
-  --button-bg: #0b6bcb;
-  --button-text: #ffffff;
-  --button-secondary-bg: #ffffff;
-  --button-secondary-text: #1b1f23;
-  --button-danger-bg: #c43838;
-  --button-danger-border: #c43838;
-  --status: #1d4f91;
-  --status-error: #b42318;
-  --hint: #667085;
-  --audio-item-border: #e2e8f0;
-  --audio-item-bg: #f8fafc;
-  --audio-icon-bg: #e8f1fb;
-  --audio-icon-text: #1d4f91;
-  --audio-meta: #667085;
-  --ring-bg: #e5eaf2;
-  --ring-progress: #0b6bcb;
-  --weight-bg: #e8f1fb;
-  --weight-text: #1d4f91;
+  --bg: #f3f0ea;
+  --text: #1c1824;
+  --subtitle: #4d465c;
+  --card-bg: rgba(255, 252, 247, 0.92);
+  --card-border: #d8d0c4;
+  --input-bg: #fffdf9;
+  --input-border: #cbbfaf;
+  --button-bg: #6b4e16;
+  --button-text: #fff8e8;
+  --button-secondary-bg: #fffdf9;
+  --button-secondary-text: #1c1824;
+  --button-danger-bg: #9b2c2c;
+  --button-danger-border: #9b2c2c;
+  --status: #6b4e16;
+  --status-error: #9b2c2c;
+  --hint: #6a6175;
+  --audio-item-border: #ddd4c7;
+  --audio-item-bg: #f7f2ea;
+  --audio-icon-bg: #ebe2d4;
+  --audio-icon-text: #6b4e16;
+  --audio-meta: #6a6175;
+  --ring-bg: #ddd4c7;
+  --ring-progress: #6b4e16;
+  --weight-bg: #ebe2d4;
+  --weight-text: #6b4e16;
+  --bg-glow: radial-gradient(circle at 20% 10%, rgba(192, 156, 74, 0.18), transparent 42%),
+    radial-gradient(circle at 80% 0%, rgba(72, 56, 110, 0.12), transparent 40%);
+  --star-dots: radial-gradient(circle, rgba(28, 24, 36, 0.12) 1px, transparent 1.5px);
 }
 
 body[data-theme="dark"] {
-  --bg: #0f172a;
-  --text: #e5e7eb;
-  --subtitle: #9aa6bb;
-  --card-bg: #111c34;
-  --card-border: #2a3a5a;
-  --input-bg: #0b1224;
-  --input-border: #2a3a5a;
-  --button-bg: #2b8cff;
-  --button-text: #06121f;
-  --button-secondary-bg: #0b1224;
-  --button-secondary-text: #e5e7eb;
-  --button-danger-bg: #ff4d4d;
-  --button-danger-border: #ff4d4d;
-  --status: #8ab4ff;
-  --status-error: #ff8a8a;
-  --hint: #a1adbf;
-  --audio-item-border: #2a3a5a;
-  --audio-item-bg: #0b1224;
-  --audio-icon-bg: #152238;
-  --audio-icon-text: #8ab4ff;
-  --audio-meta: #a1adbf;
-  --ring-bg: #1e2a44;
-  --ring-progress: #2b8cff;
-  --weight-bg: #152238;
-  --weight-text: #8ab4ff;
+  --bg: #090612;
+  --text: #f3ead7;
+  --subtitle: #cbbfa8;
+  --card-bg: rgba(18, 12, 34, 0.86);
+  --card-border: #3a2f5c;
+  --input-bg: #120b22;
+  --input-border: #4a3c6d;
+  --button-bg: #d4a94a;
+  --button-text: #1a1028;
+  --button-secondary-bg: #16102a;
+  --button-secondary-text: #f3ead7;
+  --button-danger-bg: #c44b4b;
+  --button-danger-border: #c44b4b;
+  --status: #e0b35a;
+  --status-error: #ff9b9b;
+  --hint: #b7a9c9;
+  --audio-item-border: #3a2f5c;
+  --audio-item-bg: #110a20;
+  --audio-icon-bg: #221844;
+  --audio-icon-text: #e0b35a;
+  --audio-meta: #b7a9c9;
+  --ring-bg: #2a2048;
+  --ring-progress: #e0b35a;
+  --weight-bg: #221844;
+  --weight-text: #e0b35a;
+  --bg-glow: radial-gradient(circle at 18% 8%, rgba(224, 179, 90, 0.16), transparent 36%),
+    radial-gradient(circle at 82% 12%, rgba(104, 78, 170, 0.22), transparent 42%),
+    radial-gradient(circle at 50% 100%, rgba(64, 36, 110, 0.28), transparent 50%);
+  --star-dots: radial-gradient(circle, rgba(243, 234, 215, 0.22) 1px, transparent 1.6px);
 }
 
 body {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: var(--bg);
+  font-family: "Figtree", "Segoe UI", sans-serif;
+  background-color: var(--bg);
+  background-image: var(--bg-glow), var(--star-dots);
+  background-size: auto, 28px 28px;
   color: var(--text);
+  min-height: 100vh;
 }
 
 .container {
@@ -81,10 +91,21 @@ body {
 
 .topbar h1 {
   margin: 0;
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
 }
 
 h1 {
   margin-bottom: 8px;
+  font-family: "Cinzel", "Times New Roman", serif;
+}
+
+h2 {
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .subtitle {

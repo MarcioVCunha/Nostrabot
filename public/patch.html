@@ -4,14 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nostrabot — Novidades</title>
+    <meta name="theme-color" content="#090612" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Figtree:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
+  <body data-theme="dark">
     <main class="container">
       <div class="topbar">
         <h1>Novidades</h1>
         <button id="themeToggle" class="secondary" type="button">
-          Tema: Claro
+          Tema: Mistico
         </button>
       </div>
 
@@ -21,8 +29,36 @@
 
       <section class="card patch-card">
         <div class="patch-header">
-          <h2>v1.5.0</h2>
+          <h2>v1.6.0</h2>
           <span class="patch-badge">Atual</span>
+        </div>
+        <p class="hint patch-date">Outubro de 2026</p>
+
+        <ul class="patch-tree">
+          <li>
+            <strong>Novidades</strong>
+            <ul>
+              <li>
+                <strong>Visual mistico</strong>
+                <ul>
+                  <li>
+                    Tema escuro com atmosfera de noite e dourado, tipografia
+                    propria e fundo com brilho suave.
+                  </li>
+                  <li>
+                    Novo icone e favicon em SVG (lua + anel), tambem no PWA.
+                  </li>
+                  <li>Ainda da para alternar para o tema claro legivel.</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card patch-card">
+        <div class="patch-header">
+          <h2>v1.5.0</h2>
         </div>
         <p class="hint patch-date">Outubro de 2026</p>
 
@@ -320,7 +356,7 @@
 
       <footer class="page-footer">
         <a class="footer-link" href="./">Voltar ao Nostrabot</a>
-        <span class="footer-version">v1.5.0</span>
+        <span class="footer-version">v1.6.0</span>
       </footer>
     </main>
 
@@ -348,14 +384,20 @@
         document.body.setAttribute("data-theme", theme);
         if (!themeToggle) return;
         themeToggle.textContent =
-          theme === "dark" ? "Tema: Escuro" : "Tema: Claro";
+          theme === "dark" ? "Tema: Mistico" : "Tema: Claro";
       }
 
-      applyTheme(getPreferredTheme());
+      function getPreferred() {
+        const stored = localStorage.getItem("theme");
+        if (stored === "light" || stored === "dark") return stored;
+        return "dark";
+      }
+
+      applyTheme(getPreferred());
 
       if (themeToggle) {
         themeToggle.addEventListener("click", () => {
-          const current = document.body.getAttribute("data-theme") || "light";
+          const current = document.body.getAttribute("data-theme") || "dark";
           const next = current === "dark" ? "light" : "dark";
           localStorage.setItem("theme", next);
           applyTheme(next);
