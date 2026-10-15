@@ -5,13 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nostrabot</title>
     <link rel="stylesheet" href="./styles.css" />
-    <script type="importmap">
-      {
-        "imports": {
-          "@vercel/blob/client": "https://esm.sh/@vercel/blob@2.3.1/client"
-        }
-      }
-    </script>
   </head>
   <body>
     <main class="container">
@@ -24,33 +17,62 @@
         </div>
 
         <p class="subtitle">
-          Envie arquivos de audio, salve na nuvem e agende a reproducao com
-          prioridade para os que tocam menos.
+          Biblioteca de audios no Supabase para marcar o tempo das gravacoes
+          com os amigos.
         </p>
 
         <section class="card">
           <h2>1) Enviar audio</h2>
-          <div class="row">
-            <input id="audioInput" type="file" accept="audio/*" multiple />
-            <button id="saveButton" type="button">Enviar para Vercel</button>
-            <button id="changeAdminKeyButton" class="secondary" type="button">
-              Alterar chave
-            </button>
+          <div
+            id="dropZone"
+            class="drop-zone"
+            tabindex="0"
+            aria-label="Area para soltar arquivos de audio"
+          >
+            <p>
+              Arraste audios aqui ou escolha arquivos. Compressao automatica
+              para Opus/WebM.
+            </p>
+            <div class="row">
+              <input id="audioInput" type="file" accept="audio/*" multiple />
+              <button id="saveButton" type="button">Enviar</button>
+              <button id="recordButton" class="secondary" type="button">
+                Gravar microfone
+              </button>
+              <button id="changeAdminKeyButton" class="secondary" type="button">
+                Alterar chave
+              </button>
+            </div>
           </div>
+          <div id="uploadProgressList" class="upload-progress-list" hidden></div>
           <p class="hint">
-            Upload e exclusao pedem a chave de admin uma vez (salva neste
-            dispositivo). Apenas arquivos <code>audio/*</code>, ate 25 MB.
+            Upload/exclusao usam a chave de admin. Limite 25 MB. Dados no bucket
+            publico <code>audios</code>.
           </p>
           <p id="uploadStatus" class="status" role="status" aria-live="polite"></p>
         </section>
 
         <section class="card">
           <h2>2) Audios salvos</h2>
-          <p class="hint">
-            Os arquivos ficam salvos no Vercel Blob (cloud). O peso indica a
-            chance relativa de tocar no timer.
+          <div class="row list-toolbar">
+            <input
+              id="audioSearch"
+              type="search"
+              placeholder="Buscar nome ou descricao"
+              aria-label="Buscar audios"
+            />
+            <button id="trashToggleButton" class="secondary" type="button">
+              Lixeira
+            </button>
+            <button id="migrateBlobButton" class="secondary" type="button">
+              Migrar Blob
+            </button>
+          </div>
+          <p class="hint" id="listHint">
+            Peso no banco controla a chance no timer. Itens excluidos ficam 30
+            dias na lixeira.
           </p>
-          <details class="audio-dropdown">
+          <details class="audio-dropdown" open>
             <summary id="audioDropdownSummary">Audios salvos (0)</summary>
             <ul id="audioList" class="audio-list"></ul>
           </details>
@@ -127,7 +149,7 @@
 
       <footer class="page-footer">
         <a class="footer-link" href="./patch">Novidades</a>
-        <span class="footer-version">v1.2.0</span>
+        <span class="footer-version">v1.3.0</span>
       </footer>
     </main>
 

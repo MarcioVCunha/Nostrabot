@@ -78,3 +78,21 @@ O frontend envia o arquivo com `upload()` do `@vercel/blob/client`, sem passar o
 ## CI
 
 O workflow GitHub Actions em `.github/workflows/ci.yml` roda `npm ci` e `npm test` em push/PR.
+
+## Supabase (Phase 2+)
+
+Projeto: https://slkztbeihpesepamjcbo.supabase.co (chave publishable no frontend).
+
+1. Aplique os arquivos em `supabase/migrations/` no SQL Editor.
+2. Grave o hash da chave admin:
+
+```sql
+insert into private.app_config (key, value)
+values (
+  'admin_key_hash',
+  encode(digest(convert_to('SUA_CHAVE', 'UTF8'), 'sha256'), 'hex')
+)
+on conflict (key) do update set value = excluded.value;
+```
+
+3. Use **Migrar Blob** na UI (uma vez) para trazer os audios antigos.

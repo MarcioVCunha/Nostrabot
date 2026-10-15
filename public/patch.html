@@ -21,8 +21,54 @@
 
       <section class="card patch-card">
         <div class="patch-header">
-          <h2>v1.2.0</h2>
+          <h2>v1.3.0</h2>
           <span class="patch-badge">Atual</span>
+        </div>
+        <p class="hint patch-date">Outubro de 2026</p>
+
+        <ul class="patch-tree">
+          <li>
+            <strong>Novidades</strong>
+            <ul>
+              <li>
+                <strong>Biblioteca no Supabase</strong>
+                <ul>
+                  <li>
+                    Audios passam a ficar no Storage publico
+                    <code>audios</code>, com nome, descricao e peso no banco.
+                  </li>
+                  <li>
+                    Busca na lista, arrastar-e-soltar com barra de progresso,
+                    gravacao pelo microfone e compressao para Opus/WebM.
+                  </li>
+                  <li>
+                    Lixeira com exclusao suave, restaurar em ate 30 dias e
+                    toast de desfazer.
+                  </li>
+                  <li>
+                    Botao <strong>Migrar Blob</strong> para trazer os audios
+                    antigos do Vercel Blob (uma vez).
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <strong>Observacao</strong>
+            <ul>
+              <li>
+                E preciso aplicar o SQL em
+                <code>supabase/migrations/</code> e gravar o hash da chave
+                admin em <code>private.app_config</code>.
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card patch-card">
+        <div class="patch-header">
+          <h2>v1.2.0</h2>
         </div>
         <p class="hint patch-date">Outubro de 2026</p>
 
@@ -214,7 +260,7 @@
 
       <footer class="page-footer">
         <a class="footer-link" href="./">Voltar ao Nostrabot</a>
-        <span class="footer-version">v1.2.0</span>
+        <span class="footer-version">v1.3.0</span>
       </footer>
     </main>
 

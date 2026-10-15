@@ -1,128 +1,230 @@
-import { upload } from "@vercel/blob/client";
-import { adminHeaders, ensureAdminKey, getStoredAdminKey } from "./admin-key.js";
+import { ensureAdminKey, getStoredAdminKey, adminHeaders } from "./admin-key.js";
+import { compressAudioFile } from "./compress.js";
+import {
+  isSchemaMissingError,
+  publicAudioUrl,
+  supabase
+} from "./supabase-client.js";
 
-const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
-
-function getSafeFileName(name) {
-  return (name || "audio")
-    .replace(/[^a-zA-Z0-9.\-_]/g, "_")
-    .replace(/_+/g, "_");
+export class SchemaMissingError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "SchemaMissingError";
+    this.schemaMissing = true;
+  }
 }
 
-async function readErrorMessage(response, fallback) {
+function mapAudioRow(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description || "",
+    weight: row.weight ?? 1,
+    storagePath: row.storage_path,
+    contentType: row.content_type,
+    size: row.size_bytes,
+    uploadedAt: row.created_at,
+    deletedAt: row.deleted_at,
+    url: publicAudioUrl(row.storage_path),
+    pathname: row.storage_path
+  };
+}
+
+export async function getAllAudioRecords({ query = "", trashed = false } = {}) {
+  try {
+    if (trashed) {
+      const key = ensureAdminKey();
+      if (!key) throw new Error("Chave de admin necessaria para ver a lixeira.");
+      const { data, error } = await supabase.rpc("list_trashed_audios", {
+        p_admin_key: key
+      });
+      if (error) throw error;
+      return (data || []).map(mapAudioRow);
+    }
+
+    let request = supabase
+      .from("audios")
+      .select(
+        "id,name,description,weight,storage_path,content_type,size_bytes,created_at,deleted_at"
+      )
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+
+    const q = query.trim();
+    if (q) {
+      request = request.or(
+        `name.ilike.%${q}%,description.ilike.%${q}%`
+      );
+    }
+
+    const { data, error } = await request;
+    if (error) throw error;
+    return (data || []).map(mapAudioRow);
+  } catch (error) {
+    if (isSchemaMissingError(error)) {
+      throw new SchemaMissingError(
+        "Banco ainda sem tabelas. Aplique supabase/migrations e recarregue."
+      );
+    }
+    throw new Error(
+      error?.message ||
+        "Nao foi possivel listar os audios. Verifique a conexao."
+    );
+  }
+}
+
+async function requestSignedUpload({ name, description, contentType, weight }) {
+  const key = ensureAdminKey();
+  if (!key) throw new Error("Chave de admin necessaria para enviar audios.");
+
+  const response = await fetch("/api/audio-signed-upload", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...adminHeaders()
+    },
+    body: JSON.stringify({ name, description, contentType, weight })
+  });
+
   const data = await response.json().catch(() => ({}));
-  return data.error || fallback;
-}
-
-export async function getAllAudioRecords() {
-  let response;
-  try {
-    response = await fetch("/api/audio");
-  } catch (error) {
-    throw new Error(
-      "Nao foi possivel listar os audios. Verifique a conexao e tente novamente."
-    );
-  }
-
   if (!response.ok) {
-    throw new Error(
-      await readErrorMessage(
-        response,
-        "Falha ao listar os audios salvos. Tente novamente em instantes."
-      )
-    );
+    throw new Error(data.error || "Falha ao obter URL assinada de upload.");
   }
-
-  const data = await response.json();
-  return data.items || [];
+  return data;
 }
 
-export async function deleteAudioRecord(url) {
-  const key = ensureAdminKey();
-  if (!key) {
-    throw new Error("Chave de admin necessaria para excluir audios.");
-  }
+export async function uploadAudioFile(file, options = {}) {
+  const {
+    description = "",
+    weight = 1,
+    compress = true,
+    onProgress
+  } = options;
 
-  let response;
-  try {
-    response = await fetch(`/api/audio?url=${encodeURIComponent(url)}`, {
-      method: "DELETE",
-      headers: adminHeaders()
+  if (!file) throw new Error("Nenhum arquivo selecionado.");
+
+  let working = file;
+  if (compress) {
+    if (typeof onProgress === "function") onProgress({ stage: "compress", value: 0 });
+    working = await compressAudioFile(file, (value) => {
+      if (typeof onProgress === "function") {
+        onProgress({ stage: "compress", value });
+      }
     });
-  } catch (error) {
-    throw new Error(
-      "Nao foi possivel excluir o audio. Verifique a conexao e tente novamente."
-    );
   }
 
-  if (response.status === 401) {
-    throw new Error(
-      await readErrorMessage(
-        response,
-        "Chave de admin invalida. Use \"Alterar chave\" e tente de novo."
-      )
-    );
+  if (!working.type?.startsWith("audio/")) {
+    throw new Error(`"${file.name}" nao e audio/*.`);
   }
 
-  if (!response.ok) {
-    throw new Error(
-      await readErrorMessage(response, "Falha ao excluir o audio.")
-    );
-  }
-}
+  const signed = await requestSignedUpload({
+    name: file.name.replace(/\.[^.]+$/, "") || working.name,
+    description,
+    contentType: working.type || "audio/webm",
+    weight
+  });
 
-export async function uploadAudioFile(file) {
-  if (!file.type || !file.type.startsWith("audio/")) {
-    throw new Error(
-      `"${file.name}" nao e um arquivo de audio. Envie apenas audio/*.`
-    );
+  if (typeof onProgress === "function") {
+    onProgress({ stage: "upload", value: 0.1 });
   }
 
-  if (file.size > MAX_UPLOAD_BYTES) {
-    throw new Error(
-      `"${file.name}" excede o limite de 25 MB por arquivo.`
-    );
-  }
-
-  const key = ensureAdminKey();
-  if (!key) {
-    throw new Error("Chave de admin necessaria para enviar audios.");
-  }
-
-  const safeName = getSafeFileName(file.name);
-  const pathname = `audios/${Date.now()}-${safeName}`;
-
-  try {
-    const blob = await upload(pathname, file, {
-      access: "public",
-      handleUploadUrl: "/api/upload",
-      headers: {
-        "x-admin-key": getStoredAdminKey()
-      },
-      contentType: file.type
+  const { error: uploadError } = await supabase.storage
+    .from("audios")
+    .uploadToSignedUrl(signed.path || signed.storagePath, signed.token, working, {
+      contentType: signed.contentType,
+      upsert: false
     });
-    return blob;
-  } catch (error) {
-    const message = error?.message || String(error);
 
-    if (/401|unauthorized|chave de admin|admin key/i.test(message)) {
-      throw new Error(
-        "Chave de admin invalida ou ausente. Use \"Alterar chave\" e tente de novo."
+  if (uploadError) {
+    throw new Error(uploadError.message || "Falha no upload para o Storage.");
+  }
+
+  if (typeof onProgress === "function") {
+    onProgress({ stage: "upload", value: 0.85 });
+  }
+
+  const { error: finalizeError } = await supabase.rpc("finalize_audio_upload", {
+    p_admin_key: getStoredAdminKey(),
+    p_id: signed.id,
+    p_size_bytes: working.size
+  });
+  if (finalizeError) {
+    if (isSchemaMissingError(finalizeError)) {
+      throw new SchemaMissingError(
+        "Banco ainda sem tabelas. Aplique supabase/migrations e recarregue."
       );
     }
+    throw new Error(finalizeError.message || "Falha ao finalizar upload.");
+  }
 
-    if (/content.?type|audio\/\*|not allowed|permitid/i.test(message)) {
-      throw new Error(
-        "Apenas arquivos de audio sao aceitos (tipo audio/*)."
+  if (typeof onProgress === "function") {
+    onProgress({ stage: "upload", value: 1 });
+  }
+
+  return {
+    id: signed.id,
+    url: publicAudioUrl(signed.storagePath),
+    pathname: signed.storagePath
+  };
+}
+
+export async function deleteAudioRecord(id) {
+  const key = ensureAdminKey();
+  if (!key) throw new Error("Chave de admin necessaria para excluir audios.");
+
+  const { error } = await supabase.rpc("soft_delete_audio", {
+    p_admin_key: key,
+    p_id: id
+  });
+  if (error) {
+    if (isSchemaMissingError(error)) {
+      throw new SchemaMissingError(
+        "Banco ainda sem tabelas. Aplique supabase/migrations e recarregue."
       );
     }
-
-    if (/too large|maximumSize|25/i.test(message)) {
-      throw new Error("Arquivo muito grande. Limite de 25 MB por upload.");
-    }
-
-    throw new Error(
-      message || "Falha ao enviar o arquivo para o Vercel Blob."
-    );
+    throw new Error(error.message || "Falha ao mover audio para a lixeira.");
   }
+}
+
+export async function restoreAudioRecord(id) {
+  const key = ensureAdminKey();
+  if (!key) throw new Error("Chave de admin necessaria para restaurar audios.");
+
+  const { error } = await supabase.rpc("restore_audio", {
+    p_admin_key: key,
+    p_id: id
+  });
+  if (error) {
+    throw new Error(error.message || "Falha ao restaurar audio.");
+  }
+}
+
+export async function updateAudioMeta(id, { name, description, weight }) {
+  const key = ensureAdminKey();
+  if (!key) throw new Error("Chave de admin necessaria.");
+
+  const { data, error } = await supabase.rpc("update_audio_meta", {
+    p_admin_key: key,
+    p_id: id,
+    p_name: name ?? null,
+    p_description: description ?? null,
+    p_weight: weight ?? null
+  });
+  if (error) throw new Error(error.message || "Falha ao atualizar audio.");
+  return data;
+}
+
+export async function runBlobMigration() {
+  const key = ensureAdminKey();
+  if (!key) throw new Error("Chave de admin necessaria para migrar.");
+
+  const response = await fetch("/api/migrate-from-blob", {
+    method: "POST",
+    headers: adminHeaders()
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "Falha na migracao Blob -> Supabase.");
+  }
+  return data;
 }
