@@ -3,7 +3,8 @@ const { checkAdminKey } = require("../lib/admin-auth");
 const {
   findBySourceId,
   upsertAudioRecord,
-  cleanupOrphanAudios
+  cleanupOrphanAudios,
+  readAudioIndex
 } = require("../lib/audio-index");
 const {
   buildAudioPathname,
@@ -30,6 +31,7 @@ module.exports = async function handler(req, res) {
   if (!requireBlobToken(res)) return;
 
   const results = [];
+  const writtenPathnames = new Set();
 
   try {
     const listRes = await fetch(
@@ -64,10 +66,12 @@ module.exports = async function handler(req, res) {
 
       try {
         const existing = await findBySourceId(sourceId);
+        if (existing?.pathname) writtenPathnames.add(existing.pathname);
         if (existing) {
           entry.status = "skipped";
           entry.id = existing.id;
           entry.url = existing.url;
+          entry.pathname = existing.pathname;
           results.push(entry);
           continue;
         }
@@ -105,6 +109,8 @@ module.exports = async function handler(req, res) {
           allowOverwrite: true
         });
 
+        writtenPathnames.add(blob.pathname || pathname);
+
         await upsertAudioRecord({
           id,
           name: row.name || "audio",
@@ -132,20 +138,31 @@ module.exports = async function handler(req, res) {
       results.push(entry);
     }
 
+    // Protect every pathname we know about before orphan sweep.
+    const indexAfter = await readAudioIndex();
+    for (const item of indexAfter.items || []) {
+      if (item.pathname) writtenPathnames.add(item.pathname);
+    }
+
     let orphans = null;
     try {
-      orphans = await cleanupOrphanAudios();
+      orphans = await cleanupOrphanAudios({
+        protectPathnames: writtenPathnames
+      });
     } catch (error) {
       orphans = {
         error: error?.message || String(error)
       };
     }
 
+    const finalIndex = await readAudioIndex();
+
     return sendJson(res, 200, {
       total: rows.length,
       migrated: results.filter((r) => r.status === "migrated").length,
       skipped: results.filter((r) => r.status === "skipped").length,
       errors: results.filter((r) => r.status === "error").length,
+      indexCount: (finalIndex.items || []).filter((i) => !i.deletedAt).length,
       results,
       orphans
     });
