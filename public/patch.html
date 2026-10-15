@@ -21,8 +21,71 @@
 
       <section class="card patch-card">
         <div class="patch-header">
-          <h2>v1.1.0</h2>
+          <h2>v1.2.0</h2>
           <span class="patch-badge">Atual</span>
+        </div>
+        <p class="hint patch-date">Outubro de 2026</p>
+
+        <ul class="patch-tree">
+          <li>
+            <strong>Novidades</strong>
+            <ul>
+              <li>
+                <strong>Protecao de escrita</strong>
+                <ul>
+                  <li>
+                    Enviar e excluir audios agora pedem uma chave de admin
+                    (salva neste dispositivo).
+                  </li>
+                  <li>
+                    Botao <strong>Alterar chave</strong> para trocar a senha
+                    quando quiser.
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <strong>Upload</strong>
+                <ul>
+                  <li>
+                    Arquivos sobem direto do celular/navegador para o Vercel
+                    Blob (mais leve no servidor).
+                  </li>
+                  <li>
+                    So aceita arquivos de audio (<code>audio/*</code>), ate
+                    25 MB cada.
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <strong>Mensagens e qualidade</strong>
+                <ul>
+                  <li>
+                    Erros de listar, enviar ou excluir aparecem em portugues,
+                    de forma clara.
+                  </li>
+                  <li>
+                    Codigo do app dividido em modulos e testes automaticos no
+                    GitHub.
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <strong>Correcoes</strong>
+            <ul>
+              <li>
+                Sem a chave configurada no servidor, uploads e exclusoes ficam
+                bloqueados de proposito.
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card patch-card">
+        <div class="patch-header">
+          <h2>v1.1.0</h2>
         </div>
         <p class="hint patch-date">Julho de 2026</p>
 
@@ -151,10 +214,18 @@
 
       <footer class="page-footer">
         <a class="footer-link" href="./">Voltar ao Nostrabot</a>
-        <span class="footer-version">v1.1.0</span>
+        <span class="footer-version">v1.2.0</span>
       </footer>
     </main>
 
+    <script>
+      window.va =
+        window.va ||
+        function () {
+          (window.vaq = window.vaq || []).push(arguments);
+        };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
     <script>
       const themeToggle = document.getElementById("themeToggle");
 

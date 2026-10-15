@@ -1,5 +1,21 @@
+import { ensureAdminKey } from "./admin-key.js";
+import {
+  deleteAudioRecord,
+  getAllAudioRecords,
+  uploadAudioFile
+} from "./api.js";
+import { formatBytes, formatDate, getDisplayName } from "./format.js";
+import { initThemeToggle } from "./theme.js";
+import {
+  getWeightedRandomRecord,
+  recordRandomPlay,
+  renderAudioWeights,
+  syncAudioWeights
+} from "./weights.js";
+
 const audioInput = document.getElementById("audioInput");
 const saveButton = document.getElementById("saveButton");
+const changeAdminKeyButton = document.getElementById("changeAdminKeyButton");
 const uploadStatus = document.getElementById("uploadStatus");
 const audioList = document.getElementById("audioList");
 const audioDropdownSummary = document.getElementById("audioDropdownSummary");
@@ -25,27 +41,14 @@ let activeAudio = null;
 let wakeLock = null;
 let pendingPlay = null;
 
-const AUDIO_WEIGHTS_KEY = "audioPlayWeights";
 const TIMER_PREFS_KEY = "timerPrefs";
 const ACTIVE_TIMER_KEY = "activeTimer";
 const ringRadius = Number(timerProgressRing?.getAttribute("r")) || 180;
 const ringCircumference = 2 * Math.PI * ringRadius;
 
-timerProgressRing.style.strokeDasharray = `${ringCircumference}`;
-timerProgressRing.style.strokeDashoffset = `${ringCircumference}`;
-
-function getPreferredTheme() {
-  const stored = localStorage.getItem("theme");
-  if (stored === "light" || stored === "dark") return stored;
-  const prefersDark =
-    window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  return prefersDark ? "dark" : "light";
-}
-
-function applyTheme(theme) {
-  document.body.setAttribute("data-theme", theme);
-  if (!themeToggle) return;
-  themeToggle.textContent = theme === "dark" ? "Tema: Escuro" : "Tema: Claro";
+if (timerProgressRing) {
+  timerProgressRing.style.strokeDasharray = `${ringCircumference}`;
+  timerProgressRing.style.strokeDashoffset = `${ringCircumference}`;
 }
 
 function showSetupFeedback(message, isError = true) {
@@ -140,10 +143,7 @@ function loadTimerPrefs() {
 }
 
 function saveTimerPrefs(amount, unit) {
-  localStorage.setItem(
-    TIMER_PREFS_KEY,
-    JSON.stringify({ amount, unit })
-  );
+  localStorage.setItem(TIMER_PREFS_KEY, JSON.stringify({ amount, unit }));
 }
 
 function applyTimerPrefs() {
@@ -165,7 +165,7 @@ function persistActiveTimer() {
     ACTIVE_TIMER_KEY,
     JSON.stringify({
       endAt: activeCountdown.endAt,
-      durationMs: activeCountdown.durationMs,
+      durationMs: activeCountdown.durationMs
     })
   );
 }
@@ -187,15 +187,7 @@ function clearActiveTimerStorage() {
   sessionStorage.removeItem(ACTIVE_TIMER_KEY);
 }
 
-if (themeToggle) {
-  applyTheme(getPreferredTheme());
-  themeToggle.addEventListener("click", () => {
-    const current = document.body.getAttribute("data-theme") || "light";
-    const next = current === "dark" ? "light" : "dark";
-    localStorage.setItem("theme", next);
-    applyTheme(next);
-  });
-}
+initThemeToggle(themeToggle);
 
 window.addEventListener("beforeunload", (event) => {
   if (!isTimerRunning && !activeCountdown) return;
@@ -214,69 +206,6 @@ document.addEventListener("visibilitychange", async () => {
 
   releaseWakeLock();
 });
-
-function formatBytes(bytes) {
-  if (!bytes) return "0 B";
-  const units = ["B", "KB", "MB", "GB"];
-  let value = bytes;
-  let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit += 1;
-  }
-  return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
-}
-
-function formatDate(value) {
-  return new Date(value).toLocaleString("pt-BR");
-}
-
-function getDisplayName(record) {
-  if (record.name) return record.name;
-  const raw = (record.pathname || "").split("/").pop() || "audio";
-  const withoutTimestamp = raw.replace(/^\d+-/, "");
-  return decodeURIComponent(withoutTimestamp);
-}
-
-async function uploadAudioFile(file) {
-  const response = await fetch("/api/audio", {
-    method: "POST",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      "x-file-name": encodeURIComponent(file.name),
-      "x-content-type": file.type || "audio/mpeg",
-    },
-    body: file,
-  });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "Falha ao enviar arquivo para a API.");
-  }
-
-  const data = await response.json();
-  return data.item;
-}
-
-async function getAllAudioRecords() {
-  const response = await fetch("/api/audio");
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "Falha ao listar arquivos.");
-  }
-  const data = await response.json();
-  return data.items || [];
-}
-
-async function deleteAudioRecord(url) {
-  const response = await fetch(`/api/audio?url=${encodeURIComponent(url)}`, {
-    method: "DELETE",
-  });
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "Falha ao excluir arquivo.");
-  }
-}
 
 function cleanupActiveAudio() {
   if (!activeAudio) return;
@@ -357,89 +286,6 @@ function playUrl(url, options = {}) {
   });
 }
 
-function loadAudioWeights() {
-  try {
-    const stored = localStorage.getItem(AUDIO_WEIGHTS_KEY);
-    if (!stored) return {};
-    const parsed = JSON.parse(stored);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch (error) {
-    console.error("Erro ao carregar pesos dos audios:", error);
-    return {};
-  }
-}
-
-function saveAudioWeights(weights) {
-  localStorage.setItem(AUDIO_WEIGHTS_KEY, JSON.stringify(weights));
-}
-
-function getMaxAudioWeight(weights) {
-  const values = Object.values(weights);
-  if (!values.length) return 1;
-  return Math.max(...values);
-}
-
-function syncAudioWeights(records) {
-  const weights = loadAudioWeights();
-  const recordUrls = new Set(records.map((record) => record.url));
-  const maxWeight = getMaxAudioWeight(weights);
-
-  for (const url of Object.keys(weights)) {
-    if (!recordUrls.has(url)) {
-      delete weights[url];
-    }
-  }
-
-  for (const record of records) {
-    if (weights[record.url] == null) {
-      weights[record.url] = maxWeight;
-    }
-  }
-
-  saveAudioWeights(weights);
-  return weights;
-}
-
-function getWeightedRandomRecord(records, weights) {
-  if (!records.length) return null;
-
-  const totalWeight = records.reduce(
-    (sum, record) => sum + (weights[record.url] ?? 1),
-    0
-  );
-  let roll = Math.random() * totalWeight;
-
-  for (const record of records) {
-    roll -= weights[record.url] ?? 1;
-    if (roll <= 0) return record;
-  }
-
-  return records[records.length - 1];
-}
-
-function recordRandomPlay(chosenUrl, records) {
-  const weights = { ...audioWeights };
-
-  for (const record of records) {
-    if (record.url === chosenUrl) {
-      weights[record.url] = 1;
-    } else {
-      weights[record.url] = (weights[record.url] ?? 1) + 1;
-    }
-  }
-
-  audioWeights = weights;
-  saveAudioWeights(weights);
-  renderAudioWeights();
-}
-
-function renderAudioWeights() {
-  document.querySelectorAll("[data-audio-weight]").forEach((badge) => {
-    const url = badge.dataset.audioWeight;
-    badge.textContent = `peso ${audioWeights[url] ?? 1}`;
-  });
-}
-
 function toRemainingLabel(ms) {
   const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
   const minutes = Math.floor(totalSeconds / 60);
@@ -508,8 +354,9 @@ function handleTimerComplete() {
   playUrl(chosen.url, {
     allowFallback: true,
     onPlayStart: () => {
-      recordRandomPlay(chosen.url, cachedRecords);
-    },
+      audioWeights = recordRandomPlay(chosen.url, cachedRecords, audioWeights);
+      renderAudioWeights(audioWeights);
+    }
   });
 }
 
@@ -536,7 +383,7 @@ function startCountdown(durationMs, resumeState = null) {
     durationMs: totalDurationMs,
     endAt,
     intervalId,
-    timeoutId,
+    timeoutId
   };
 
   persistActiveTimer();
@@ -703,6 +550,15 @@ async function handleSaveFiles() {
     return;
   }
 
+  const nonAudio = files.filter((file) => !file.type?.startsWith("audio/"));
+  if (nonAudio.length) {
+    showUploadStatus(
+      `Apenas audio/* e aceito. Remova: ${nonAudio.map((f) => f.name).join(", ")}`,
+      true
+    );
+    return;
+  }
+
   saveButton.disabled = true;
 
   try {
@@ -723,6 +579,15 @@ async function handleSaveFiles() {
   }
 }
 
+function handleChangeAdminKey() {
+  const key = ensureAdminKey({ forcePrompt: true });
+  if (!key) {
+    showUploadStatus("Chave de admin removida deste dispositivo.", true);
+    return;
+  }
+  showUploadStatus("Chave de admin salva neste dispositivo.");
+}
+
 async function resumeTimerIfStored() {
   const stored = loadActiveTimer();
   if (!stored) return;
@@ -731,7 +596,7 @@ async function resumeTimerIfStored() {
   if (remaining > 0) {
     startCountdown(remaining, {
       endAt: stored.endAt,
-      durationMs: stored.durationMs,
+      durationMs: stored.durationMs
     });
     return;
   }
@@ -747,8 +612,9 @@ async function resumeTimerIfStored() {
   playUrl(chosen.url, {
     allowFallback: true,
     onPlayStart: () => {
-      recordRandomPlay(chosen.url, cachedRecords);
-    },
+      audioWeights = recordRandomPlay(chosen.url, cachedRecords, audioWeights);
+      renderAudioWeights(audioWeights);
+    }
   });
 }
 
@@ -762,6 +628,9 @@ async function init() {
     applyTimerPrefs();
 
     saveButton.addEventListener("click", handleSaveFiles);
+    if (changeAdminKeyButton) {
+      changeAdminKeyButton.addEventListener("click", handleChangeAdminKey);
+    }
     startRandomTimerButton.addEventListener("click", startRandomTimer);
     cancelRandomTimerButton.addEventListener("click", cancelRandomTimer);
 
@@ -771,7 +640,7 @@ async function init() {
         const { url, onPlayStart } = pendingPlay;
         playUrl(url, {
           allowFallback: true,
-          onPlayStart,
+          onPlayStart
         });
       });
     }
@@ -782,8 +651,10 @@ async function init() {
     updateUiLock();
   } catch (error) {
     console.error(error);
-    showUploadStatus(error?.message || "Erro ao conectar com a API.", true);
-    saveButton.disabled = true;
+    showUploadStatus(
+      error?.message || "Erro ao carregar a lista de audios. Recarregue a pagina.",
+      true
+    );
   }
 }
 

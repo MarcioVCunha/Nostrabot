@@ -1,8 +1,14 @@
 {
   "name": "audio-timer-vercel",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/admin-auth.test.js test/blob-helpers.test.js"
+  },
   "dependencies": {
-    "@vercel/blob": "latest"
+    "@vercel/blob": "^2.3.1"
   }
 }
