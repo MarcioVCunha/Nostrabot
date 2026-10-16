@@ -26,10 +26,6 @@ export function serverNowMs() {
   return Date.now() + clockOffsetMs;
 }
 
-export function getClockOffsetMs() {
-  return clockOffsetMs;
-}
-
 function noStoreFetch(url, options = {}) {
   const bust = new URL(url, window.location.origin);
   bust.searchParams.set("_ts", String(Date.now()));

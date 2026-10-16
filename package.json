@@ -6,7 +6,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test test/admin-auth.test.js test/blob-helpers.test.js test/draw.test.js test/audio-index.test.js test/json-blob.test.js test/rooms-store.test.js"
+    "test": "node --test test/*.test.js"
   },
   "type": "commonjs",
   "dependencies": {

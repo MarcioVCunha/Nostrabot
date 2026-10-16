@@ -43,23 +43,6 @@ export function syncAudioWeights(records) {
   return weights;
 }
 
-export function getWeightedRandomRecord(records, weights) {
-  if (!records.length) return null;
-
-  const totalWeight = records.reduce(
-    (sum, record) => sum + (weights[record.url] ?? 1),
-    0
-  );
-  let roll = Math.random() * totalWeight;
-
-  for (const record of records) {
-    roll -= weights[record.url] ?? 1;
-    if (roll <= 0) return record;
-  }
-
-  return records[records.length - 1];
-}
-
 export function recordRandomPlay(chosenUrl, records, currentWeights) {
   const weights = { ...currentWeights };
 
