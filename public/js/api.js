@@ -229,26 +229,3 @@ export async function restoreAudioRecord(id) {
     );
   }
 }
-
-export async function updateAudioMeta(id, { name, description, weight }) {
-  const key = ensureAdminKey();
-  if (!key) throw new Error("Chave de admin necessária.");
-
-  const response = await fetch("/api/audio", {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...adminHeaders()
-    },
-    body: JSON.stringify({ id, name, description, weight })
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      await readErrorMessage(response, "Falha ao atualizar o áudio.")
-    );
-  }
-
-  const data = await response.json();
-  return data.item;
-}

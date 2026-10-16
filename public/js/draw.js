@@ -1,6 +1,6 @@
 const CYCLE_KEY = "nostrabotDrawCycle";
 
-export function loadCycleSet() {
+function loadCycleSet() {
   try {
     const raw = localStorage.getItem(CYCLE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
@@ -10,12 +10,8 @@ export function loadCycleSet() {
   }
 }
 
-export function saveCycleSet(set) {
+function saveCycleSet(set) {
   localStorage.setItem(CYCLE_KEY, JSON.stringify([...set]));
-}
-
-export function clearCycleSet() {
-  localStorage.removeItem(CYCLE_KEY);
 }
 
 export function drawWeightedRecord(
