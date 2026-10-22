@@ -1,9 +1,9 @@
-export async function recordPlayEvent({ audioId, audioName, audioUrl, roomId }) {
+export async function recordPlayEvent({ audioId, audioName, audioUrl }) {
   try {
     const response = await fetch("/api/history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ audioId, audioName, audioUrl, roomId })
+      body: JSON.stringify({ audioId, audioName, audioUrl })
     });
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
@@ -14,10 +14,9 @@ export async function recordPlayEvent({ audioId, audioName, audioUrl, roomId }) 
   }
 }
 
-export async function listPlayHistory({ roomId = null, limit = 30 } = {}) {
+export async function listPlayHistory({ limit = 30 } = {}) {
   try {
     const params = new URLSearchParams();
-    if (roomId) params.set("roomId", roomId);
     params.set("limit", String(limit));
     const response = await fetch(`/api/history?${params}`);
     if (!response.ok) return [];

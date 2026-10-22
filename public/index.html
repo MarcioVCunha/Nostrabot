@@ -34,7 +34,7 @@
             Chave
           </button>
           <a class="footer-link" href="./patch">Novidades</a>
-          <span class="footer-version">v1.8.0</span>
+          <span class="footer-version">v1.9.0</span>
         </div>
       </header>
 
@@ -182,40 +182,14 @@
               Toque para reproduzir
             </button>
           </div>
+
+          <div class="stage-history">
+            <div class="panel-header">
+              <h2>Histórico</h2>
+            </div>
+            <ul id="playHistoryList" class="history-list"></ul>
+          </div>
         </section>
-
-        <aside class="panel panel-right glass" aria-label="Sala e histórico">
-          <div class="panel-header">
-            <h2>Sala</h2>
-          </div>
-          <p class="hint">
-            Compartilhe o link para todo mundo acompanhar o mesmo timer.
-          </p>
-          <div class="row">
-            <button id="createRoomButton" type="button">Criar sala</button>
-            <button
-              id="copyRoomLinkButton"
-              class="secondary"
-              type="button"
-              disabled
-            >
-              Copiar link
-            </button>
-          </div>
-          <p id="roomStatus" class="room-status">Sem sala</p>
-          <p id="roomHint" class="hint"></p>
-          <div class="row sound-unlock-row">
-            <button id="enableSoundButton" class="secondary" type="button" hidden>
-              Ativar som
-            </button>
-          </div>
-          <p id="soundStatus" class="status sound-status" role="status" aria-live="polite"></p>
-
-          <div class="panel-header panel-header--spaced">
-            <h2>Histórico</h2>
-          </div>
-          <ul id="playHistoryList" class="history-list"></ul>
-        </aside>
       </div>
     </div>
 
