@@ -149,7 +149,7 @@ h2 {
 .app-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(240px, 0.9fr) minmax(300px, 1.3fr) minmax(220px, 0.8fr);
+  grid-template-columns: minmax(260px, 0.95fr) minmax(320px, 1.45fr);
   gap: 10px;
   min-height: 0;
   overflow: hidden;
@@ -177,11 +177,29 @@ h2 {
 
 .panel-center {
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   text-align: center;
   position: relative;
   overflow: auto;
   gap: 12px;
+}
+
+.stage-history {
+  width: 100%;
+  max-width: min(560px, 100%);
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--card-border);
+  text-align: left;
+  flex: 0 1 auto;
+}
+
+.stage-history .panel-header {
+  margin-bottom: 4px;
+}
+
+.stage-history .history-list {
+  max-height: 32vh;
 }
 
 .panel-header {
@@ -602,21 +620,6 @@ button:disabled {
   border-color: color-mix(in srgb, var(--status) 55%, var(--card-border));
 }
 
-.sound-unlock-row {
-  margin-top: 0.5rem;
-}
-
-.sound-status {
-  margin-top: 0.35rem;
-  font-size: 0.85rem;
-}
-
-.room-status {
-  font-weight: 700;
-  color: var(--status);
-  margin: 0;
-}
-
 .history-list {
   list-style: none;
   margin: 0;
@@ -906,16 +909,17 @@ button:disabled {
   }
 
   .app-grid {
-    grid-template-columns: 1fr 1.2fr;
+    grid-template-columns: 1fr;
     grid-template-areas:
-      "center center"
-      "left right";
+      "center"
+      "left";
     overflow: visible;
   }
 
   .panel-left {
     grid-area: left;
-    max-height: 48vh;
+    max-height: none;
+    height: auto;
   }
 
   .panel-center {
@@ -923,9 +927,8 @@ button:disabled {
     min-height: 320px;
   }
 
-  .panel-right {
-    grid-area: right;
-    max-height: 48vh;
+  .stage-history .history-list {
+    max-height: none;
   }
 }
 
@@ -936,14 +939,9 @@ button:disabled {
 
   .app-grid {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      "center"
-      "left"
-      "right";
   }
 
-  .panel-left,
-  .panel-right {
+  .panel-left {
     max-height: none;
     height: auto;
   }

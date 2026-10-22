@@ -1,4 +1,4 @@
-const CACHE = "nostrabot-shell-v1.8.1";
+const CACHE = "nostrabot-shell-v1.9.0";
 const SHELL = [
   "./",
   "./index.html",
@@ -19,7 +19,6 @@ const SHELL = [
   "./js/draw.js",
   "./js/history.js",
   "./js/notifications.js",
-  "./js/rooms.js",
   "./js/prank-ad.js",
   "./js/errors.js",
   "./img/anuncio-chica.png"

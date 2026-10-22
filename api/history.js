@@ -10,9 +10,8 @@ module.exports = async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
-      const roomId = req.query?.roomId || null;
       const limit = Number(req.query?.limit) || 30;
-      const events = await listPlayHistory({ roomId, limit });
+      const events = await listPlayHistory({ limit });
       return sendJson(res, 200, {
         events,
         server_now: new Date().toISOString()
@@ -25,8 +24,7 @@ module.exports = async function handler(req, res) {
       const event = await recordPlayEvent({
         audioId: body.audioId,
         audioName: body.audioName,
-        audioUrl: body.audioUrl,
-        roomId: body.roomId
+        audioUrl: body.audioUrl
       });
       return sendJson(res, 201, { event });
     }
