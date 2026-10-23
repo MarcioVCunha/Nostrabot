@@ -1,4 +1,4 @@
-const CACHE = "nostrabot-shell-v1.9.0";
+const CACHE = "nostrabot-shell-v1.10.0";
 const SHELL = [
   "./",
   "./index.html",
@@ -19,9 +19,7 @@ const SHELL = [
   "./js/draw.js",
   "./js/history.js",
   "./js/notifications.js",
-  "./js/prank-ad.js",
-  "./js/errors.js",
-  "./img/anuncio-chica.png"
+  "./js/errors.js"
 ];
 
 self.addEventListener("install", (event) => {

@@ -34,7 +34,7 @@
             Chave
           </button>
           <a class="footer-link" href="./patch">Novidades</a>
-          <span class="footer-version">v1.9.0</span>
+          <span class="footer-version">v1.10.0</span>
         </div>
       </header>
 
@@ -74,62 +74,12 @@
               Lixeira
             </button>
           </div>
-          <p class="hint" id="listHint">O peso define a chance no sorteio.</p>
+          <p class="hint" id="listHint">Número = peso no sorteio.</p>
           <ul id="audioList" class="audio-list audio-list--compact"></ul>
         </aside>
 
         <section class="panel panel-center glass" aria-label="Palco do timer">
-          <div id="setupScreen" class="stage-setup">
-            <p class="stage-kicker">Contagem</p>
-            <div class="stage-controls">
-              <label class="field">
-                <span>Min</span>
-                <input
-                  id="timerAmountMin"
-                  type="number"
-                  min="1"
-                  value="30"
-                  aria-label="Tempo mínimo"
-                />
-              </label>
-              <label class="field">
-                <span>Max</span>
-                <input
-                  id="timerAmountMax"
-                  type="number"
-                  min="1"
-                  value="60"
-                  aria-label="Tempo máximo"
-                />
-              </label>
-              <select id="timerUnit" aria-label="Unidade de tempo">
-                <option value="seconds">Segundos</option>
-                <option value="minutes">Minutos</option>
-              </select>
-            </div>
-
-            <div class="row timer-options">
-              <label class="check">
-                <input id="timerAutoRepeat" type="checkbox" />
-                Repetir
-              </label>
-              <label class="check">
-                <input id="timerNoRepeat" type="checkbox" />
-                Sem repetir até todos
-              </label>
-              <label class="check">
-                <input id="timerNotify" type="checkbox" checked />
-                Notificar
-              </label>
-            </div>
-
-            <button id="startRandomTimerButton" class="cta-start" type="button">
-              Iniciar timer
-            </button>
-            <p id="timerSetupStatus" class="status" role="status" aria-live="polite"></p>
-          </div>
-
-          <div id="timerScreen" class="timer-stage" hidden>
+          <div class="timer-stage">
             <div class="timer-widget timer-widget--stage">
               <svg
                 id="timerSvg"
@@ -153,13 +103,60 @@
                   id="timeRemainingLabel"
                   class="time-remaining time-remaining--xl"
                 >
-                  --:--
+                  00:30
                 </div>
-                <div id="timerStateLabel" class="time-caption">Aguardando</div>
+                <div id="timerStateLabel" class="time-caption">Pronto</div>
               </div>
             </div>
 
-            <div class="timer-screen-actions">
+            <div id="timerIdleControls" class="timer-idle-controls">
+              <div class="stage-controls">
+                <label class="field">
+                  <span>Tempo</span>
+                  <input
+                    id="timerAmount"
+                    type="number"
+                    min="1"
+                    value="30"
+                    aria-label="Duração do timer"
+                  />
+                </label>
+                <label class="field">
+                  <span>Unidade</span>
+                  <select id="timerUnit" aria-label="Unidade de tempo">
+                    <option value="seconds">Segundos</option>
+                    <option value="minutes">Minutos</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="row timer-options">
+                <label class="check">
+                  <input id="timerAutoRepeat" type="checkbox" />
+                  Repetir
+                </label>
+                <label class="check">
+                  <input id="timerNoRepeat" type="checkbox" />
+                  Sem repetir até todos
+                </label>
+                <label class="check">
+                  <input id="timerNotify" type="checkbox" checked />
+                  Notificar
+                </label>
+              </div>
+
+              <button id="startRandomTimerButton" class="cta-start" type="button">
+                Iniciar timer
+              </button>
+              <p
+                id="timerSetupStatus"
+                class="status"
+                role="status"
+                aria-live="polite"
+              ></p>
+            </div>
+
+            <div id="timerRunControls" class="timer-screen-actions" hidden>
               <button id="pauseResumeTimerButton" class="secondary" type="button">
                 Pausar
               </button>
@@ -171,16 +168,15 @@
               >
                 Cancelar
               </button>
+              <button
+                id="playFallbackButton"
+                class="play-fallback"
+                type="button"
+                hidden
+              >
+                Toque para reproduzir
+              </button>
             </div>
-
-            <button
-              id="playFallbackButton"
-              class="play-fallback"
-              type="button"
-              hidden
-            >
-              Toque para reproduzir
-            </button>
           </div>
 
           <div class="stage-history">
@@ -192,34 +188,6 @@
         </section>
       </div>
     </div>
-
-    <aside id="prankAd" class="prank-ad" aria-label="Anúncio">
-      <div class="prank-ad-bar">
-        <span class="prank-ad-label">Anúncio</span>
-        <button
-          id="prankAdClose"
-          class="prank-ad-close"
-          type="button"
-          aria-label="Fechar anúncio"
-        >
-          ×
-        </button>
-      </div>
-      <a
-        class="prank-ad-link"
-        href="https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <img
-          src="./img/anuncio-chica.png"
-          alt="Anúncio"
-          width="220"
-          height="208"
-          loading="lazy"
-        />
-      </a>
-    </aside>
 
     <script>
       window.va =

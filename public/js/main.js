@@ -6,7 +6,7 @@ import {
   uploadAudioFile
 } from "./api.js";
 import { drawWeightedRecord } from "./draw.js";
-import { formatBytes, formatDate, getDisplayName } from "./format.js";
+import { formatDate, getDisplayName } from "./format.js";
 import { listPlayHistory, recordPlayEvent } from "./history.js";
 import {
   ensureNotificationPermission,
@@ -14,7 +14,6 @@ import {
 } from "./notifications.js";
 import { createMicRecorder } from "./recorder.js";
 import { friendlyUserError } from "./errors.js";
-import { initPrankAd } from "./prank-ad.js";
 import { initThemeToggle } from "./theme.js";
 import { showToast } from "./toast.js";
 import {
@@ -36,10 +35,9 @@ const audioList = document.getElementById("audioList");
 const audioDropdownSummary = document.getElementById("audioDropdownSummary");
 const themeToggle = document.getElementById("themeToggle");
 const appShell = document.getElementById("appShell");
-const setupScreen = document.getElementById("setupScreen");
-const timerScreen = document.getElementById("timerScreen");
-const timerAmountMinInput = document.getElementById("timerAmountMin");
-const timerAmountMaxInput = document.getElementById("timerAmountMax");
+const timerIdleControls = document.getElementById("timerIdleControls");
+const timerRunControls = document.getElementById("timerRunControls");
+const timerAmountInput = document.getElementById("timerAmount");
 const timerUnitSelect = document.getElementById("timerUnit");
 const timerAutoRepeat = document.getElementById("timerAutoRepeat");
 const timerNoRepeat = document.getElementById("timerNoRepeat");
@@ -104,8 +102,7 @@ function showUploadStatus(message, isError = false) {
 function updateUiLock() {
   const locked = (isTimerRunning && !isTimerPaused) || isAudioPlaying;
   if (startRandomTimerButton) startRandomTimerButton.disabled = locked || isTimerPaused;
-  if (timerAmountMinInput) timerAmountMinInput.disabled = locked || isTimerPaused;
-  if (timerAmountMaxInput) timerAmountMaxInput.disabled = locked || isTimerPaused;
+  if (timerAmountInput) timerAmountInput.disabled = locked || isTimerPaused;
   if (timerUnitSelect) timerUnitSelect.disabled = locked || isTimerPaused;
   if (cancelRandomTimerButton) {
     cancelRandomTimerButton.disabled = !(isTimerRunning || isTimerPaused || isAudioPlaying);
@@ -121,17 +118,33 @@ function updateUiLock() {
     });
 }
 
-function showTimerScreen() {
-  if (setupScreen) setupScreen.hidden = true;
-  if (timerScreen) timerScreen.hidden = false;
+function showActiveControls() {
+  if (timerIdleControls) timerIdleControls.hidden = true;
+  if (timerRunControls) timerRunControls.hidden = false;
   if (appShell) appShell.classList.add("is-timing");
 }
 
-function showSetupScreen() {
-  if (timerScreen) timerScreen.hidden = true;
-  if (setupScreen) setupScreen.hidden = false;
+function showIdleControls() {
+  if (timerRunControls) timerRunControls.hidden = true;
+  if (timerIdleControls) timerIdleControls.hidden = false;
   if (appShell) appShell.classList.remove("is-timing");
   hidePlayFallback();
+  refreshIdlePreview();
+}
+
+function configuredDurationMs() {
+  const unit = timerUnitSelect?.value || "seconds";
+  const multiplier = unit === "minutes" ? 60_000 : 1_000;
+  let amount = Number(timerAmountInput?.value);
+  if (!Number.isFinite(amount) || amount <= 0) amount = 1;
+  return Math.round(amount * multiplier);
+}
+
+function refreshIdlePreview() {
+  if (isTimerRunning || isTimerPaused || isAudioPlaying || activeCountdown) return;
+  setRingProgress(0);
+  timeRemainingLabel.textContent = toRemainingLabel(configuredDurationMs());
+  if (timerStateLabel) timerStateLabel.textContent = "Pronto";
 }
 
 function hidePlayFallback() {
@@ -181,18 +194,20 @@ function saveTimerPrefs(prefs) {
 function applyTimerPrefs() {
   const prefs = loadTimerPrefs();
   if (!prefs) return;
-  if (prefs.min != null && timerAmountMinInput) timerAmountMinInput.value = prefs.min;
-  if (prefs.max != null && timerAmountMaxInput) timerAmountMaxInput.value = prefs.max;
-  if (prefs.amount != null && timerAmountMinInput && !prefs.min) {
-    timerAmountMinInput.value = prefs.amount;
-    timerAmountMaxInput.value = prefs.amount;
-  }
+  const amount =
+    prefs.amount != null
+      ? prefs.amount
+      : prefs.min != null
+        ? prefs.min
+        : null;
+  if (amount != null && timerAmountInput) timerAmountInput.value = amount;
   if (prefs.unit === "seconds" || prefs.unit === "minutes") {
     timerUnitSelect.value = prefs.unit;
   }
   if (timerAutoRepeat) timerAutoRepeat.checked = Boolean(prefs.autoRepeat);
   if (timerNoRepeat) timerNoRepeat.checked = Boolean(prefs.noRepeat);
   if (timerNotify) timerNotify.checked = prefs.notify !== false;
+  refreshIdlePreview();
 }
 
 function persistActiveTimer() {
@@ -226,7 +241,6 @@ function clearActiveTimerStorage() {
 }
 
 initThemeToggle(themeToggle);
-initPrankAd();
 
 window.addEventListener("beforeunload", (event) => {
   if (!isTimerRunning && !activeCountdown) return;
@@ -283,10 +297,10 @@ function playUrl(url, options = {}) {
       updateUiLock();
       if (pendingAutoRepeat && cachedRecords.length) {
         pendingAutoRepeat = false;
-        startCountdown(pickDurationMs());
+        startCountdown(configuredDurationMs());
         return;
       }
-      showSetupScreen();
+      showIdleControls();
     },
     { once: true }
   );
@@ -298,7 +312,7 @@ function playUrl(url, options = {}) {
       releaseWakeLock();
       timerStateLabel.textContent = "Erro ao tocar áudio";
       updateUiLock();
-      showSetupScreen();
+      showIdleControls();
     },
     { once: true }
   );
@@ -309,7 +323,7 @@ function playUrl(url, options = {}) {
     activeAudio = null;
     updateUiLock();
     if (allowFallback) {
-      showTimerScreen();
+      showActiveControls();
       showPlayFallback(url, onPlayStart);
       return;
     }
@@ -317,7 +331,7 @@ function playUrl(url, options = {}) {
       "Não foi possível reproduzir automaticamente. Tente novamente.",
       true
     );
-    showSetupScreen();
+    showIdleControls();
   });
 }
 
@@ -340,8 +354,7 @@ function stopCountdown(stateText) {
   activeCountdown = null;
   clearActiveTimerStorage();
   if (stateText) timerStateLabel.textContent = stateText;
-  setRingProgress(0);
-  timeRemainingLabel.textContent = "--:--";
+  refreshIdlePreview();
 }
 
 function updateCountdownUi() {
@@ -353,18 +366,6 @@ function updateCountdownUi() {
   setRingProgress(percent);
   timeRemainingLabel.textContent = toRemainingLabel(remaining);
   if (remaining <= 0 && isTimerRunning) handleTimerComplete();
-}
-
-function pickDurationMs() {
-  const unit = timerUnitSelect.value;
-  const multiplier = unit === "minutes" ? 60_000 : 1_000;
-  let min = Number(timerAmountMinInput?.value);
-  let max = Number(timerAmountMaxInput?.value);
-  if (!Number.isFinite(min) || min <= 0) min = 1;
-  if (!Number.isFinite(max) || max <= 0) max = min;
-  if (max < min) [min, max] = [max, min];
-  const amount = min === max ? min : min + Math.random() * (max - min);
-  return Math.round(amount * multiplier);
 }
 
 async function refreshHistory() {
@@ -417,7 +418,7 @@ function handleTimerComplete() {
     isTimerRunning = false;
     releaseWakeLock();
     updateUiLock();
-    showSetupScreen();
+    showIdleControls();
     return;
   }
 
@@ -426,6 +427,7 @@ function handleTimerComplete() {
   setRingProgress(100);
   timeRemainingLabel.textContent = "00:00";
   timerStateLabel.textContent = "Tocando...";
+  showActiveControls();
 
   playUrl(chosen.url, {
     allowFallback: true,
@@ -452,7 +454,7 @@ function startCountdown(durationMs, resumeState = null) {
   isTimerRunning = true;
   isTimerPaused = false;
   updateUiLock();
-  showTimerScreen();
+  showActiveControls();
   requestWakeLock();
   if (cancelRandomTimerButton) cancelRandomTimerButton.disabled = false;
   timerStateLabel.textContent = "Timer rodando";
@@ -566,10 +568,6 @@ function buildAudioItem(record) {
   const li = document.createElement("li");
   li.className = "audio-item";
 
-  const icon = document.createElement("div");
-  icon.className = "audio-icon";
-  icon.setAttribute("aria-hidden", "true");
-
   const body = document.createElement("div");
   body.className = "audio-body";
 
@@ -584,30 +582,11 @@ function buildAudioItem(record) {
   const weightBadge = document.createElement("span");
   weightBadge.className = "audio-weight";
   weightBadge.dataset.audioWeight = record.url;
-  weightBadge.textContent = `peso ${audioWeights[record.url] ?? record.weight ?? 1}`;
+  weightBadge.textContent = String(audioWeights[record.url] ?? record.weight ?? 1);
+  weightBadge.title = `Peso ${weightBadge.textContent}`;
 
   header.append(name, weightBadge);
-
-  const meta = document.createElement("div");
-  meta.className = "audio-meta";
-  const size = document.createElement("span");
-  size.className = "audio-meta-item";
-  size.textContent = formatBytes(record.size);
-  const date = document.createElement("span");
-  date.className = "audio-meta-item";
-  date.textContent = showingTrash
-    ? `Excluído em ${formatDate(record.deletedAt)}`
-    : `Salvo em ${formatDate(record.uploadedAt)}`;
-  meta.append(size, date);
-
-  if (record.description) {
-    const desc = document.createElement("p");
-    desc.className = "audio-description";
-    desc.textContent = record.description;
-    body.append(header, desc, meta);
-  } else {
-    body.append(header, meta);
-  }
+  body.append(header);
 
   const actions = document.createElement("div");
   actions.className = "audio-actions";
@@ -673,7 +652,7 @@ function buildAudioItem(record) {
     actions.append(playNowButton, deleteButton);
   }
 
-  li.append(icon, body, actions);
+  li.append(body, actions);
   return li;
 }
 
@@ -685,8 +664,8 @@ async function refreshList() {
     });
     if (listHint) {
       listHint.textContent = showingTrash
-        ? "Itens na lixeira podem ser restaurados por até 30 dias."
-        : "O peso define a chance no sorteio. Itens excluídos ficam 30 dias na lixeira.";
+        ? "Lixeira: restaurar em até 30 dias."
+        : "Número = peso no sorteio.";
     }
 
     records.sort((a, b) => {
@@ -744,10 +723,9 @@ async function refreshList() {
 
 async function startRandomTimer() {
   clearSetupFeedback();
-  const min = Number(timerAmountMinInput?.value);
-  const max = Number(timerAmountMaxInput?.value);
-  if (!Number.isFinite(min) || min <= 0 || !Number.isFinite(max) || max <= 0) {
-    showSetupFeedback("Informe um intervalo válido (mín/máx).");
+  const amount = Number(timerAmountInput?.value);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    showSetupFeedback("Informe um tempo válido.");
     return;
   }
   if (!cachedRecords.length) {
@@ -756,8 +734,7 @@ async function startRandomTimer() {
   }
   const unit = timerUnitSelect.value;
   saveTimerPrefs({
-    min,
-    max,
+    amount,
     unit,
     autoRepeat: Boolean(timerAutoRepeat?.checked),
     noRepeat: Boolean(timerNoRepeat?.checked),
@@ -766,8 +743,7 @@ async function startRandomTimer() {
   if (timerNotify?.checked) {
     await ensureNotificationPermission();
   }
-  const durationMs = pickDurationMs();
-  startCountdown(durationMs);
+  startCountdown(configuredDurationMs());
 }
 
 function cancelRandomTimer() {
@@ -781,7 +757,7 @@ function cancelRandomTimer() {
   hidePlayFallback();
   updateUiLock();
   if (activeCountdown) stopCountdown("Timer cancelado");
-  showSetupScreen();
+  showIdleControls();
 }
 
 function handleChangeAdminKey() {
@@ -806,7 +782,7 @@ async function resumeTimerIfStored() {
   }
   clearActiveTimerStorage();
   if (!cachedRecords.length) return;
-  showTimerScreen();
+  showActiveControls();
   timerStateLabel.textContent = "Timer encerrado";
   const chosen = drawWeightedRecord(cachedRecords, audioWeights, {
     noRepeatUntilAll: Boolean(timerNoRepeat?.checked)
@@ -853,13 +829,19 @@ async function init() {
     isAudioPlaying = false;
     activeAudio = null;
     activeCountdown = null;
-    showSetupScreen();
+    showIdleControls();
     applyTimerPrefs();
     wireDropZone();
 
     saveButton.addEventListener("click", () => uploadMany(audioInput.files));
     if (changeAdminKeyButton) {
       changeAdminKeyButton.addEventListener("click", handleChangeAdminKey);
+    }
+    const previewInputs = [timerAmountInput, timerUnitSelect];
+    for (const input of previewInputs) {
+      if (!input) continue;
+      input.addEventListener("input", refreshIdlePreview);
+      input.addEventListener("change", refreshIdlePreview);
     }
     startRandomTimerButton.addEventListener("click", () => {
       startRandomTimer().catch((error) => {
@@ -941,7 +923,9 @@ async function init() {
     await refreshHistory();
 
     await resumeTimerIfStored();
-    timerStateLabel.textContent = "Aguardando";
+    if (!isTimerRunning && !isTimerPaused && !isAudioPlaying) {
+      refreshIdlePreview();
+    }
     updateUiLock();
   } catch (error) {
     console.error(error);
