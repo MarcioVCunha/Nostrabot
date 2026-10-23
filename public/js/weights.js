@@ -61,6 +61,8 @@ export function recordRandomPlay(chosenUrl, records, currentWeights) {
 export function renderAudioWeights(audioWeights) {
   document.querySelectorAll("[data-audio-weight]").forEach((badge) => {
     const url = badge.dataset.audioWeight;
-    badge.textContent = `peso ${audioWeights[url] ?? 1}`;
+    const weight = String(audioWeights[url] ?? 1);
+    badge.textContent = weight;
+    badge.title = `Peso ${weight}`;
   });
 }
