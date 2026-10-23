@@ -740,8 +740,9 @@ async function startRandomTimer() {
     noRepeat: Boolean(timerNoRepeat?.checked),
     notify: Boolean(timerNotify?.checked)
   });
+  // Don't await: the permission dialog must not block countdown start.
   if (timerNotify?.checked) {
-    await ensureNotificationPermission();
+    ensureNotificationPermission().catch(() => {});
   }
   startCountdown(configuredDurationMs());
 }
