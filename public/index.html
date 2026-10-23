@@ -197,11 +197,11 @@
         };
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    <script type="module" src="./js/main.js"></script>
+    <script type="module" src="./js/main.js?v=1.10.0"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-          navigator.serviceWorker.register("./sw.js").catch(() => {});
+          navigator.serviceWorker.register("./sw.js?v=1.10.0").catch(() => {});
         });
       }
     </script>
