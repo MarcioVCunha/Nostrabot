@@ -478,10 +478,18 @@ button:disabled {
   gap: 12px;
   flex: 1 1 auto;
   min-height: 0;
+  overflow: hidden;
+}
+
+.timer-idle-controls,
+.timer-screen-actions {
+  width: min(100%, 360px);
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
 }
 
 .timer-idle-controls {
-  width: min(100%, 360px);
   display: grid;
   gap: 10px;
   justify-items: center;
@@ -498,10 +506,12 @@ button:disabled {
 }
 
 .timer-widget--stage {
-  width: clamp(260px, min(58vmin, 78%), 420px);
-  height: clamp(260px, min(58vmin, 78%), 420px);
-  flex: 1 1 auto;
-  max-height: min(58vh, 420px);
+  width: min(48vmin, 360px);
+  height: min(48vmin, 360px);
+  max-width: 100%;
+  flex: 0 1 auto;
+  max-height: min(42vh, 360px);
+  pointer-events: none;
 }
 
 .timer-ring {
@@ -859,6 +869,8 @@ button:disabled {
   }
 
   .timer-widget--stage {
-    max-height: min(46vh, 340px);
+    width: min(56vw, 300px);
+    height: min(56vw, 300px);
+    max-height: min(38vh, 300px);
   }
 }
