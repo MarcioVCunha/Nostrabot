@@ -72,9 +72,27 @@ html {
   height: 100%;
 }
 
+@font-face {
+  font-family: "Figtree Fallback";
+  src: local("Arial"), local("Helvetica Neue"), local("Helvetica");
+  size-adjust: 103%;
+  ascent-override: 95%;
+  descent-override: 24%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Cinzel Fallback";
+  src: local("Times New Roman"), local("Times"), local("Georgia");
+  size-adjust: 98%;
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+
 body {
   margin: 0;
-  font-family: "Figtree", "Segoe UI", sans-serif;
+  font-family: "Figtree", "Figtree Fallback", "Segoe UI", sans-serif;
   background-color: var(--bg);
   background-image: var(--bg-glow), var(--star-dots);
   background-size: auto, 28px 28px;
@@ -89,7 +107,7 @@ body:has(.app-shell) {
 
 h1,
 h2 {
-  font-family: "Cinzel", "Times New Roman", serif;
+  font-family: "Cinzel", "Cinzel Fallback", "Times New Roman", serif;
   font-weight: 600;
   letter-spacing: 0.02em;
   margin: 0;
@@ -113,6 +131,7 @@ h2 {
   gap: 10px;
   flex-wrap: wrap;
   flex-shrink: 0;
+  min-height: 52px;
 }
 
 .brand-block {
@@ -171,8 +190,13 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow: auto;
+  overflow: hidden;
   transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  contain: layout;
+}
+
+.panel-left {
+  min-height: 0;
 }
 
 .panel-center {
@@ -191,15 +215,25 @@ h2 {
   padding-top: 10px;
   border-top: 1px solid var(--card-border);
   text-align: left;
-  flex: 0 1 auto;
+  flex: 0 0 168px;
+  height: 168px;
+  min-height: 168px;
+  max-height: 168px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .stage-history .panel-header {
   margin-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .stage-history .history-list {
-  max-height: 32vh;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  height: auto;
 }
 
 .panel-header {
@@ -345,8 +379,8 @@ button:disabled {
 }
 
 .audio-list--compact {
-  flex: 1;
-  min-height: 0;
+  flex: 1 1 auto;
+  min-height: 220px;
   overflow: auto;
   padding-right: 2px;
 }
@@ -527,9 +561,21 @@ button:disabled {
   overflow: hidden;
 }
 
+.timer-controls-slot {
+  width: min(100%, 360px);
+  min-height: 148px;
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 .timer-idle-controls,
 .timer-screen-actions {
-  width: min(100%, 360px);
+  width: 100%;
   position: relative;
   z-index: 2;
   flex: 0 0 auto;
@@ -552,11 +598,11 @@ button:disabled {
 }
 
 .timer-widget--stage {
-  width: min(48vmin, 360px);
-  height: min(48vmin, 360px);
+  width: 280px;
+  height: 280px;
   max-width: 100%;
-  flex: 0 1 auto;
-  max-height: min(42vh, 360px);
+  flex: 0 0 280px;
+  max-height: 280px;
   pointer-events: none;
 }
 
@@ -598,10 +644,12 @@ button:disabled {
 }
 
 .time-remaining--xl {
-  font-size: clamp(2.4rem, 10vmin, 4.6rem) !important;
+  font-size: 3.2rem !important;
   letter-spacing: 0.04em;
-  font-family: "Cinzel", serif;
+  font-family: "Cinzel", "Cinzel Fallback", serif;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  min-height: 3.4rem;
 }
 
 .time-caption {
@@ -873,15 +921,20 @@ button:disabled {
     grid-area: left;
     max-height: none;
     height: auto;
+    min-height: 360px;
   }
 
   .panel-center {
     grid-area: center;
-    min-height: 320px;
+    min-height: 520px;
   }
 
-  .stage-history .history-list {
-    max-height: none;
+  .stage-history {
+    flex-basis: 168px;
+  }
+
+  .audio-list--compact {
+    min-height: 180px;
   }
 }
 
@@ -897,6 +950,7 @@ button:disabled {
   .panel-left {
     max-height: none;
     height: auto;
+    min-height: 320px;
   }
 
   .audio-item {
@@ -915,8 +969,14 @@ button:disabled {
   }
 
   .timer-widget--stage {
-    width: min(56vw, 300px);
-    height: min(56vw, 300px);
-    max-height: min(38vh, 300px);
+    width: 240px;
+    height: 240px;
+    flex-basis: 240px;
+    max-height: 240px;
+  }
+
+  .time-remaining--xl {
+    font-size: 2.6rem !important;
+    min-height: 2.8rem;
   }
 }

@@ -17,6 +17,12 @@ import { friendlyUserError } from "./errors.js";
 import { initThemeToggle } from "./theme.js";
 import { showToast } from "./toast.js";
 import {
+  loadCachedAudioRecords,
+  loadCachedHistory,
+  saveCachedAudioRecords,
+  saveCachedHistory
+} from "./cache.js";
+import {
   recordRandomPlay,
   renderAudioWeights,
   syncAudioWeights
@@ -368,30 +374,117 @@ function updateCountdownUi() {
   if (remaining <= 0 && isTimerRunning) handleTimerComplete();
 }
 
-async function refreshHistory() {
+function renderHistoryRows(rows) {
   if (!playHistoryList) return;
-  try {
-    const rows = await listPlayHistory({ limit: 20 });
-    playHistoryList.innerHTML = "";
-    if (!rows.length) {
-      const empty = document.createElement("li");
-      empty.className = "history-empty";
-      empty.textContent = "Nenhum toque registrado ainda.";
-      playHistoryList.appendChild(empty);
-      return;
-    }
-    for (const row of rows) {
-      const li = document.createElement("li");
-      li.textContent = `${row.audio_name || "audio"} — ${formatDate(row.played_at)}`;
-      playHistoryList.appendChild(li);
-    }
-  } catch (error) {
-    playHistoryList.innerHTML = "";
+  playHistoryList.innerHTML = "";
+  if (!rows?.length) {
+    const empty = document.createElement("li");
+    empty.className = "history-empty";
+    empty.textContent = "Nenhum toque registrado ainda.";
+    playHistoryList.appendChild(empty);
+    return;
+  }
+  for (const row of rows) {
     const li = document.createElement("li");
-    li.className = "history-empty";
-    li.textContent = "Histórico indisponível no momento.";
+    li.textContent = `${row.audio_name || "audio"} — ${formatDate(row.played_at)}`;
     playHistoryList.appendChild(li);
   }
+}
+
+function applyAudioRecords(records, { persistCache = false } = {}) {
+  if (listHint) {
+    listHint.textContent = showingTrash
+      ? "Lixeira: restaurar em até 30 dias."
+      : "Número = peso no sorteio.";
+  }
+
+  const sorted = [...records].sort((a, b) => {
+    const aTime = new Date(showingTrash ? a.deletedAt : a.uploadedAt).getTime();
+    const bTime = new Date(showingTrash ? b.deletedAt : b.uploadedAt).getTime();
+    return bTime - aTime;
+  });
+
+  cachedRecords = showingTrash ? [] : sorted;
+  if (!showingTrash) {
+    const seeded = {};
+    for (const record of sorted) {
+      seeded[record.url] = record.weight ?? 1;
+    }
+    audioWeights = syncAudioWeights(sorted);
+    for (const record of sorted) {
+      if (seeded[record.url] != null) {
+        audioWeights[record.url] = Math.max(
+          audioWeights[record.url] ?? 1,
+          seeded[record.url]
+        );
+      }
+    }
+    if (persistCache) saveCachedAudioRecords(sorted);
+  }
+
+  if (!audioList) return;
+  audioList.innerHTML = "";
+  if (audioDropdownSummary) {
+    audioDropdownSummary.textContent = String(sorted.length);
+  }
+
+  if (sorted.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "audio-item audio-item--empty";
+    empty.textContent = showingTrash
+      ? "Lixeira vazia."
+      : "Nenhum áudio ainda.";
+    audioList.appendChild(empty);
+    updateUiLock();
+    return;
+  }
+
+  sorted.forEach((record) => audioList.appendChild(buildAudioItem(record)));
+  updateUiLock();
+}
+
+function hydrateFromCache() {
+  let hydrated = false;
+  const history = loadCachedHistory();
+  if (history) {
+    renderHistoryRows(history);
+    hydrated = true;
+  }
+  if (!showingTrash && !searchQuery) {
+    const audios = loadCachedAudioRecords();
+    if (audios) {
+      applyAudioRecords(audios, { persistCache: false });
+      hydrated = true;
+    }
+  }
+  return hydrated;
+}
+
+async function refreshHistory() {
+  if (!playHistoryList) return { ok: true, events: [] };
+  try {
+    const rows = await listPlayHistory({ limit: 20 });
+    renderHistoryRows(rows);
+    saveCachedHistory(rows);
+    return { ok: true, events: rows };
+  } catch (error) {
+    if (!playHistoryList.querySelector("li:not(.audio-item--skeleton)")) {
+      playHistoryList.innerHTML = "";
+      const li = document.createElement("li");
+      li.className = "history-empty";
+      li.textContent = "Histórico indisponível no momento.";
+      playHistoryList.appendChild(li);
+    }
+    return { ok: false, error };
+  }
+}
+
+function waitForNextPaint() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(resolve);
+    });
+  });
 }
 
 function handleTimerComplete() {
@@ -665,62 +758,20 @@ async function refreshList() {
       query: searchQuery,
       trashed: showingTrash
     });
-    if (listHint) {
-      listHint.textContent = showingTrash
-        ? "Lixeira: restaurar em até 30 dias."
-        : "Número = peso no sorteio.";
-    }
-
-    records.sort((a, b) => {
-      const aTime = new Date(showingTrash ? a.deletedAt : a.uploadedAt).getTime();
-      const bTime = new Date(showingTrash ? b.deletedAt : b.uploadedAt).getTime();
-      return bTime - aTime;
+    applyAudioRecords(records, {
+      persistCache: !showingTrash && !searchQuery
     });
-
-    cachedRecords = showingTrash ? [] : records;
-    if (!showingTrash) {
-      const seeded = {};
-      for (const record of records) {
-        seeded[record.url] = record.weight ?? 1;
-      }
-      audioWeights = syncAudioWeights(records);
-      for (const record of records) {
-        if (seeded[record.url] != null) {
-          audioWeights[record.url] = Math.max(
-            audioWeights[record.url] ?? 1,
-            seeded[record.url]
-          );
-        }
-      }
-    }
-
-    audioList.innerHTML = "";
-    if (audioDropdownSummary) {
-      audioDropdownSummary.textContent = String(records.length);
-    }
-
-    if (records.length === 0) {
-      const empty = document.createElement("li");
-      empty.className = "audio-item audio-item--empty";
-      empty.textContent = showingTrash
-        ? "Lixeira vazia."
-        : "Nenhum áudio ainda.";
-      audioList.appendChild(empty);
-      updateUiLock();
-      return { ok: true };
-    }
-
-    records.forEach((record) => audioList.appendChild(buildAudioItem(record)));
-    updateUiLock();
     return { ok: true };
   } catch (error) {
-    cachedRecords = [];
-    audioList.innerHTML = "";
-    const empty = document.createElement("li");
-    empty.className = "audio-item audio-item--empty";
-    empty.textContent = "Não foi possível carregar a biblioteca.";
-    audioList.appendChild(empty);
-    if (audioDropdownSummary) audioDropdownSummary.textContent = "0";
+    if (!audioList?.querySelector(".audio-item:not(.audio-item--skeleton):not(.audio-item--empty)")) {
+      cachedRecords = [];
+      audioList.innerHTML = "";
+      const empty = document.createElement("li");
+      empty.className = "audio-item audio-item--empty";
+      empty.textContent = "Não foi possível carregar a biblioteca.";
+      audioList.appendChild(empty);
+      if (audioDropdownSummary) audioDropdownSummary.textContent = "0";
+    }
     showUploadStatus(error.message || "Erro ao listar áudios.", true);
     return { ok: false, error };
   }
@@ -940,9 +991,27 @@ async function init() {
       });
     }
 
-    const libraryResult = await refreshList();
-    signalBootLibrary(libraryResult);
-    await refreshHistory();
+    const hadCache = hydrateFromCache();
+    if (hadCache) {
+      await waitForNextPaint();
+      signalBootLibrary({ ok: true });
+    }
+
+    const revalidate = Promise.all([refreshList(), refreshHistory()]);
+    if (!hadCache) {
+      const [libraryResult] = await revalidate;
+      await waitForNextPaint();
+      signalBootLibrary(libraryResult);
+    } else {
+      revalidate.then(([libraryResult]) => {
+        if (libraryResult?.ok === false) {
+          showUploadStatus(
+            libraryResult.error?.message || "Erro ao atualizar áudios.",
+            true
+          );
+        }
+      });
+    }
 
     await resumeTimerIfStored();
     if (!isTimerRunning && !isTimerPaused && !isAudioPlaying) {
