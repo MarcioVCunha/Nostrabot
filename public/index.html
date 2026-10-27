@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="is-booting">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,13 +10,124 @@
     <link rel="apple-touch-icon" href="./icons/icon-192.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <style>
+      /* Critical boot splash — paints before styles.css to avoid FOUC */
+      html.is-booting,
+      html.is-booting body {
+        margin: 0;
+        min-height: 100%;
+        background: #090612;
+        color: #f3ead7;
+      }
+      #bootSplash {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at 18% 8%, rgba(224, 179, 90, 0.16), transparent 36%),
+          radial-gradient(circle at 82% 12%, rgba(104, 78, 170, 0.22), transparent 42%),
+          radial-gradient(circle at 50% 100%, rgba(64, 36, 110, 0.28), transparent 50%),
+          #090612;
+        background-size: auto, auto, auto, auto;
+        transition: opacity 0.4s ease, visibility 0.4s ease;
+      }
+      #bootSplash.is-done {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+      .boot-splash-inner {
+        width: min(100%, 320px);
+        text-align: center;
+      }
+      .boot-mark {
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 14px;
+        display: block;
+      }
+      .boot-brand {
+        margin: 0;
+        font-family: "Times New Roman", Georgia, serif;
+        font-size: 1.55rem;
+        letter-spacing: 0.04em;
+        font-weight: 700;
+        color: #f3ead7;
+      }
+      .boot-status {
+        margin: 8px 0 18px;
+        font-family: system-ui, sans-serif;
+        font-size: 0.9rem;
+        color: #b7a9c9;
+      }
+      .boot-bars {
+        display: grid;
+        gap: 8px;
+      }
+      .boot-bar {
+        height: 12px;
+        border-radius: 999px;
+        background: rgba(34, 24, 68, 0.95);
+        border: 1px solid rgba(58, 47, 92, 0.85);
+        overflow: hidden;
+        position: relative;
+      }
+      .boot-bar::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(224, 179, 90, 0.28),
+          transparent
+        );
+        animation: boot-shimmer 1.2s ease-in-out infinite;
+      }
+      .boot-bar:nth-child(2) { width: 88%; margin: 0 auto; }
+      .boot-bar:nth-child(3) { width: 72%; margin: 0 auto; }
+      @keyframes boot-shimmer {
+        100% { transform: translateX(100%); }
+      }
+      html.is-booting #appShell {
+        visibility: hidden;
+      }
+    </style>
     <link
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Figtree:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css" />
+    <link
+      id="appStylesheet"
+      rel="stylesheet"
+      href="./styles.css?v=1.11.0"
+    />
   </head>
   <body data-theme="dark">
+    <div
+      id="bootSplash"
+      class="boot-splash"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div class="boot-splash-inner">
+        <img class="boot-mark" src="./favicon.svg" alt="" width="48" height="48" />
+        <p class="boot-brand">Nostrabot</p>
+        <p id="bootStatus" class="boot-status">Carregando biblioteca...</p>
+        <div class="boot-bars" aria-hidden="true">
+          <div class="boot-bar"></div>
+          <div class="boot-bar"></div>
+          <div class="boot-bar"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="appShell" class="app-shell">
       <header class="app-topbar">
         <div class="brand-block">
@@ -34,7 +145,7 @@
             Chave
           </button>
           <a class="footer-link" href="./patch">Novidades</a>
-          <span class="footer-version">v1.10.0</span>
+          <span class="footer-version">v1.11.0</span>
         </div>
       </header>
 
@@ -75,7 +186,28 @@
             </button>
           </div>
           <p class="hint" id="listHint">Número = peso no sorteio.</p>
-          <ul id="audioList" class="audio-list audio-list--compact"></ul>
+          <ul id="audioList" class="audio-list audio-list--compact">
+            <li class="audio-item audio-item--skeleton" aria-hidden="true">
+              <div class="skeleton-line skeleton-line--title"></div>
+              <div class="skeleton-line skeleton-line--meta"></div>
+            </li>
+            <li class="audio-item audio-item--skeleton" aria-hidden="true">
+              <div class="skeleton-line skeleton-line--title"></div>
+              <div class="skeleton-line skeleton-line--meta"></div>
+            </li>
+            <li class="audio-item audio-item--skeleton" aria-hidden="true">
+              <div class="skeleton-line skeleton-line--title"></div>
+              <div class="skeleton-line skeleton-line--meta"></div>
+            </li>
+            <li class="audio-item audio-item--skeleton" aria-hidden="true">
+              <div class="skeleton-line skeleton-line--title"></div>
+              <div class="skeleton-line skeleton-line--meta"></div>
+            </li>
+            <li class="audio-item audio-item--skeleton" aria-hidden="true">
+              <div class="skeleton-line skeleton-line--title"></div>
+              <div class="skeleton-line skeleton-line--meta"></div>
+            </li>
+          </ul>
         </aside>
 
         <section class="panel panel-center glass" aria-label="Palco do timer">
@@ -190,6 +322,92 @@
     </div>
 
     <script>
+      (function () {
+        var gates = { styles: false, fonts: false, library: false };
+        var revealed = false;
+        var splash = document.getElementById("bootSplash");
+        var statusEl = document.getElementById("bootStatus");
+
+        function setStatus(text) {
+          if (statusEl) statusEl.textContent = text;
+        }
+
+        function reveal() {
+          if (revealed) return;
+          revealed = true;
+          document.documentElement.classList.remove("is-booting");
+          if (splash) {
+            splash.classList.add("is-done");
+            splash.setAttribute("aria-busy", "false");
+            setTimeout(function () {
+              if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+            }, 450);
+          }
+        }
+
+        function tryReveal() {
+          if (gates.styles && gates.fonts && gates.library) {
+            setStatus("Pronto");
+            reveal();
+          }
+        }
+
+        window.__nostrabotBoot = {
+          mark: function (key) {
+            if (!Object.prototype.hasOwnProperty.call(gates, key)) return;
+            gates[key] = true;
+            tryReveal();
+          },
+          failLibrary: function (message) {
+            gates.library = true;
+            setStatus(message || "Falha ao carregar. Abrindo o app...");
+            // Still wait for styles/fonts, then reveal so the in-app error is visible.
+            tryReveal();
+            // If styles/fonts already ready, reveal immediately.
+            if (gates.styles && gates.fonts) reveal();
+          }
+        };
+
+        var sheet = document.getElementById("appStylesheet");
+        function markStyles() {
+          window.__nostrabotBoot.mark("styles");
+        }
+        if (sheet) {
+          if (sheet.sheet) markStyles();
+          else {
+            sheet.addEventListener("load", markStyles);
+            sheet.addEventListener("error", markStyles);
+          }
+        } else {
+          markStyles();
+        }
+
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(
+            function () {
+              window.__nostrabotBoot.mark("fonts");
+            },
+            function () {
+              window.__nostrabotBoot.mark("fonts");
+            }
+          );
+        } else {
+          window.__nostrabotBoot.mark("fonts");
+        }
+
+        // Safety: never leave users stuck behind the splash.
+        setTimeout(function () {
+          if (!revealed) {
+            gates.styles = true;
+            gates.fonts = true;
+            gates.library = true;
+            setStatus("Abrindo o app...");
+            reveal();
+          }
+        }, 12000);
+      })();
+    </script>
+    <script>
       window.va =
         window.va ||
         function () {
@@ -197,11 +415,11 @@
         };
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    <script type="module" src="./js/main.js?v=1.10.0"></script>
+    <script type="module" src="./js/main.js?v=1.11.0"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-          navigator.serviceWorker.register("./sw.js?v=1.10.0").catch(() => {});
+          navigator.serviceWorker.register("./sw.js?v=1.11.0").catch(() => {});
         });
       }
     </script>

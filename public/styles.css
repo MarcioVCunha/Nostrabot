@@ -376,6 +376,52 @@ button:disabled {
   padding: 10px 8px;
 }
 
+.audio-item--skeleton {
+  grid-template-columns: 1fr;
+  grid-template-areas: "body";
+  gap: 6px;
+  pointer-events: none;
+  min-height: 38px;
+}
+
+.skeleton-line {
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--audio-icon-bg) 85%, var(--card-border));
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-line--title {
+  width: 68%;
+}
+
+.skeleton-line--meta {
+  width: 42%;
+  height: 8px;
+  opacity: 0.75;
+}
+
+.skeleton-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--status) 28%, transparent),
+    transparent
+  );
+  animation: boot-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes boot-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .audio-body {
   grid-area: body;
   min-width: 0;
