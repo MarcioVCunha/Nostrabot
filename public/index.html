@@ -50,9 +50,17 @@
         margin: 0 auto 14px;
         display: block;
       }
+      @font-face {
+        font-family: "Cinzel Fallback";
+        src: local("Times New Roman"), local("Times"), local("Georgia");
+        size-adjust: 98%;
+        ascent-override: 90%;
+        descent-override: 22%;
+        line-gap-override: 0%;
+      }
       .boot-brand {
         margin: 0;
-        font-family: "Times New Roman", Georgia, serif;
+        font-family: "Cinzel", "Cinzel Fallback", "Times New Roman", Georgia, serif;
         font-size: 1.55rem;
         letter-spacing: 0.04em;
         font-weight: 700;
@@ -99,13 +107,18 @@
       }
     </style>
     <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Figtree:wght@400;600;700&display=swap"
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Figtree:wght@400;600;700&display=optional"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Figtree:wght@400;600;700&display=optional"
       rel="stylesheet"
     />
     <link
       id="appStylesheet"
       rel="stylesheet"
-      href="./styles.css?v=1.11.0"
+      href="./styles.css?v=1.12.0"
     />
   </head>
   <body data-theme="dark">
@@ -119,7 +132,7 @@
       <div class="boot-splash-inner">
         <img class="boot-mark" src="./favicon.svg" alt="" width="48" height="48" />
         <p class="boot-brand">Nostrabot</p>
-        <p id="bootStatus" class="boot-status">Carregando biblioteca...</p>
+        <p id="bootStatus" class="boot-status">Preparando layout...</p>
         <div class="boot-bars" aria-hidden="true">
           <div class="boot-bar"></div>
           <div class="boot-bar"></div>
@@ -145,7 +158,7 @@
             Chave
           </button>
           <a class="footer-link" href="./patch">Novidades</a>
-          <span class="footer-version">v1.11.0</span>
+          <span class="footer-version">v1.12.0</span>
         </div>
       </header>
 
@@ -241,73 +254,75 @@
               </div>
             </div>
 
-            <div id="timerIdleControls" class="timer-idle-controls">
-              <div class="stage-controls">
-                <label class="field">
-                  <span>Tempo</span>
-                  <input
-                    id="timerAmount"
-                    type="number"
-                    min="1"
-                    value="30"
-                    aria-label="Duração do timer"
-                  />
-                </label>
-                <label class="field">
-                  <span>Unidade</span>
-                  <select id="timerUnit" aria-label="Unidade de tempo">
-                    <option value="seconds">Segundos</option>
-                    <option value="minutes">Minutos</option>
-                  </select>
-                </label>
+            <div class="timer-controls-slot">
+              <div id="timerIdleControls" class="timer-idle-controls">
+                <div class="stage-controls">
+                  <label class="field">
+                    <span>Tempo</span>
+                    <input
+                      id="timerAmount"
+                      type="number"
+                      min="1"
+                      value="30"
+                      aria-label="Duração do timer"
+                    />
+                  </label>
+                  <label class="field">
+                    <span>Unidade</span>
+                    <select id="timerUnit" aria-label="Unidade de tempo">
+                      <option value="seconds">Segundos</option>
+                      <option value="minutes">Minutos</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="row timer-options">
+                  <label class="check">
+                    <input id="timerAutoRepeat" type="checkbox" />
+                    Repetir
+                  </label>
+                  <label class="check">
+                    <input id="timerNoRepeat" type="checkbox" />
+                    Sem repetir até todos
+                  </label>
+                  <label class="check">
+                    <input id="timerNotify" type="checkbox" checked />
+                    Notificar
+                  </label>
+                </div>
+
+                <button id="startRandomTimerButton" class="cta-start" type="button">
+                  Iniciar timer
+                </button>
+                <p
+                  id="timerSetupStatus"
+                  class="status"
+                  role="status"
+                  aria-live="polite"
+                ></p>
               </div>
 
-              <div class="row timer-options">
-                <label class="check">
-                  <input id="timerAutoRepeat" type="checkbox" />
-                  Repetir
-                </label>
-                <label class="check">
-                  <input id="timerNoRepeat" type="checkbox" />
-                  Sem repetir até todos
-                </label>
-                <label class="check">
-                  <input id="timerNotify" type="checkbox" checked />
-                  Notificar
-                </label>
+              <div id="timerRunControls" class="timer-screen-actions" hidden>
+                <button id="pauseResumeTimerButton" class="secondary" type="button">
+                  Pausar
+                </button>
+                <button
+                  id="cancelRandomTimerButton"
+                  class="secondary"
+                  type="button"
+                  disabled
+                >
+                  Cancelar
+                </button>
+                <button
+                  id="playFallbackButton"
+                  class="play-fallback"
+                  type="button"
+                  hidden
+                >
+                  Toque para reproduzir
+                </button>
               </div>
-
-              <button id="startRandomTimerButton" class="cta-start" type="button">
-                Iniciar timer
-              </button>
-              <p
-                id="timerSetupStatus"
-                class="status"
-                role="status"
-                aria-live="polite"
-              ></p>
-            </div>
-
-            <div id="timerRunControls" class="timer-screen-actions" hidden>
-              <button id="pauseResumeTimerButton" class="secondary" type="button">
-                Pausar
-              </button>
-              <button
-                id="cancelRandomTimerButton"
-                class="secondary"
-                type="button"
-                disabled
-              >
-                Cancelar
-              </button>
-              <button
-                id="playFallbackButton"
-                class="play-fallback"
-                type="button"
-                hidden
-              >
-                Toque para reproduzir
-              </button>
             </div>
           </div>
 
@@ -315,7 +330,17 @@
             <div class="panel-header">
               <h2>Histórico</h2>
             </div>
-            <ul id="playHistoryList" class="history-list"></ul>
+            <ul id="playHistoryList" class="history-list">
+              <li class="audio-item audio-item--skeleton" aria-hidden="true">
+                <div class="skeleton-line skeleton-line--title"></div>
+              </li>
+              <li class="audio-item audio-item--skeleton" aria-hidden="true">
+                <div class="skeleton-line skeleton-line--title"></div>
+              </li>
+              <li class="audio-item audio-item--skeleton" aria-hidden="true">
+                <div class="skeleton-line skeleton-line--title"></div>
+              </li>
+            </ul>
           </div>
         </section>
       </div>
@@ -415,11 +440,11 @@
         };
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
-    <script type="module" src="./js/main.js?v=1.11.0"></script>
+    <script type="module" src="./js/main.js?v=1.12.0"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-          navigator.serviceWorker.register("./sw.js?v=1.11.0").catch(() => {});
+          navigator.serviceWorker.register("./sw.js?v=1.12.0").catch(() => {});
         });
       }
     </script>
