@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Figtree:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=1.11.0" />
   </head>
   <body data-theme="dark">
     <main class="container">
@@ -29,8 +29,40 @@
 
       <section class="card patch-card">
         <div class="patch-header">
-          <h2>v1.10.0</h2>
+          <h2>v1.11.0</h2>
           <span class="patch-badge">Atual</span>
+        </div>
+        <p class="hint patch-date">Outubro de 2026</p>
+
+        <ul class="patch-tree">
+          <li>
+            <strong>Novidades</strong>
+            <ul>
+              <li>
+                <strong>Tela de carregamento</strong>
+                <ul>
+                  <li>
+                    Splash temático aparece na hora (CSS crítico no HTML), sem
+                    flash de layout quebrado.
+                  </li>
+                  <li>
+                    Some só depois de estilos, fontes e a primeira carga da
+                    biblioteca; a lista mostra skeleton enquanto busca.
+                  </li>
+                  <li>
+                    Se a biblioteca falhar, o splash fecha e o erro aparece no
+                    app.
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card patch-card">
+        <div class="patch-header">
+          <h2>v1.10.0</h2>
         </div>
         <p class="hint patch-date">Outubro de 2026</p>
 
@@ -447,7 +479,7 @@
 
       <footer class="page-footer">
         <a class="footer-link" href="./">Voltar ao Nostrabot</a>
-        <span class="footer-version">v1.10.0</span>
+        <span class="footer-version">v1.11.0</span>
       </footer>
     </main>
 

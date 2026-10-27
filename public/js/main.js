@@ -656,6 +656,9 @@ function buildAudioItem(record) {
   return li;
 }
 
+/**
+ * @returns {Promise<{ ok: true } | { ok: false, error: Error }>}
+ */
 async function refreshList() {
   try {
     const records = await getAllAudioRecords({
@@ -704,11 +707,12 @@ async function refreshList() {
         : "Nenhum áudio ainda.";
       audioList.appendChild(empty);
       updateUiLock();
-      return;
+      return { ok: true };
     }
 
     records.forEach((record) => audioList.appendChild(buildAudioItem(record)));
     updateUiLock();
+    return { ok: true };
   } catch (error) {
     cachedRecords = [];
     audioList.innerHTML = "";
@@ -718,7 +722,23 @@ async function refreshList() {
     audioList.appendChild(empty);
     if (audioDropdownSummary) audioDropdownSummary.textContent = "0";
     showUploadStatus(error.message || "Erro ao listar áudios.", true);
+    return { ok: false, error };
   }
+}
+
+function signalBootLibrary(result) {
+  const boot = window.__nostrabotBoot;
+  if (!boot) return;
+  if (result?.ok === false) {
+    boot.failLibrary(
+      friendlyUserError(
+        result.error,
+        "Falha ao carregar a biblioteca. Abrindo o app..."
+      )
+    );
+    return;
+  }
+  boot.mark("library");
 }
 
 async function startRandomTimer() {
@@ -920,7 +940,8 @@ async function init() {
       });
     }
 
-    await refreshList();
+    const libraryResult = await refreshList();
+    signalBootLibrary(libraryResult);
     await refreshHistory();
 
     await resumeTimerIfStored();
@@ -930,6 +951,7 @@ async function init() {
     updateUiLock();
   } catch (error) {
     console.error(error);
+    signalBootLibrary({ ok: false, error });
     showUploadStatus(
       error?.message || "Erro ao carregar a lista de áudios. Recarregue a página.",
       true
